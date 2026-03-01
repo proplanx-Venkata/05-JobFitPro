@@ -79,9 +79,42 @@ export async function DELETE(
     );
   }
 
-  // Delete storage file if one was uploaded
+  // ── Clean up output files (resume PDFs + cover letter PDFs) ─────────────
+  // Collect all output_storage_path values from resume_versions and their
+  // cover_letters. The DB cascade will delete the rows; we must remove files.
+  const admin = createSupabaseAdminClient();
+
+  const { data: versions } = await supabase
+    .from("resume_versions")
+    .select("id, output_storage_path")
+    .eq("job_description_id", id);
+
+  if (versions && versions.length > 0) {
+    const versionIds = versions.map((v) => v.id);
+
+    const { data: coverLetters } = await supabase
+      .from("cover_letters")
+      .select("output_storage_path")
+      .in("resume_version_id", versionIds);
+
+    const outputPaths: string[] = [];
+    for (const v of versions) {
+      if (v.output_storage_path) outputPaths.push(v.output_storage_path);
+    }
+    if (coverLetters) {
+      for (const cl of coverLetters) {
+        if (cl.output_storage_path) outputPaths.push(cl.output_storage_path);
+      }
+    }
+
+    if (outputPaths.length > 0) {
+      // Non-fatal: proceed even if some removals fail
+      await admin.storage.from("outputs").remove(outputPaths);
+    }
+  }
+
+  // Delete JD storage file if one was uploaded
   if (jd.storage_path) {
-    const admin = createSupabaseAdminClient();
     await admin.storage.from("job-descriptions").remove([jd.storage_path]);
     // Non-fatal: proceed with DB delete even if storage removal fails
   }

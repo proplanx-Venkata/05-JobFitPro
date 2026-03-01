@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DeleteJdButton } from "@/components/jd/delete-jd-button";
 
 interface JdCardProps {
   jd: {
@@ -29,9 +30,12 @@ export function JdCard({ jd }: JdCardProps) {
   return (
     <Card className="flex flex-col">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base line-clamp-2">
-          {jd.title ?? "Untitled Role"}
-        </CardTitle>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="text-base line-clamp-2">
+            {jd.title ?? "Untitled Role"}
+          </CardTitle>
+          <DeleteJdButton jdId={jd.id} variant="icon" />
+        </div>
       </CardHeader>
       <CardContent className="flex-1 space-y-1.5">
         {jd.company && (

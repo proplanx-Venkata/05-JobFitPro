@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Building2, Calendar, ExternalLink } from "lucide-react";
 import { StartAnalysisButton } from "@/components/jd/start-analysis-button";
+import { DeleteJdButton } from "@/components/jd/delete-jd-button";
 
 interface JdDetailPageProps {
   params: Promise<{ id: string }>;
@@ -55,7 +56,10 @@ export default async function JdDetailPage({ params }: JdDetailPageProps) {
     <div className="max-w-3xl space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold">{jd.title ?? "Job Description"}</h2>
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-2xl font-bold">{jd.title ?? "Job Description"}</h2>
+          <DeleteJdButton jdId={jd.id} redirectTo="/jds" variant="button" />
+        </div>
         <div className="flex flex-wrap items-center gap-3 mt-2">
           {jd.company && (
             <div className="flex items-center gap-1 text-sm text-muted-foreground">

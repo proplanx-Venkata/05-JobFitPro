@@ -56,7 +56,7 @@ export function RewritePanel({
   if (status === "ready" || initialPdfPath) {
     return (
       <div className="space-y-4">
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4 flex items-center justify-between">
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 flex items-center justify-between gap-3 flex-wrap">
           <div>
             <p className="text-sm font-medium text-green-800">
               Resume ready!
@@ -65,16 +65,28 @@ export function RewritePanel({
               Your tailored resume has been generated.
             </p>
           </div>
-          {pdfUrl ? (
-            <Button asChild size="sm" variant="outline" className="gap-1.5" disabled={loading}>
-              <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                <FileDown className="h-4 w-4" />
-                Download PDF
-              </a>
+          <div className="flex items-center gap-2">
+            {pdfUrl ? (
+              <Button asChild size="sm" variant="outline" className="gap-1.5" disabled={loading}>
+                <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                  <FileDown className="h-4 w-4" />
+                  Download PDF
+                </a>
+              </Button>
+            ) : (
+              <DownloadButton versionId={versionId} disabled={loading} />
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => window.open(`/api/resume-versions/${versionId}/docx`, "_blank")}
+              disabled={loading}
+              className="gap-1.5"
+            >
+              <FileDown className="h-4 w-4" />
+              Download DOCX
             </Button>
-          ) : (
-            <DownloadButton versionId={versionId} disabled={loading} />
-          )}
+          </div>
         </div>
         <Button
           variant="ghost"
