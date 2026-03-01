@@ -33,7 +33,7 @@ export function StartAnalysisButton({ resumeId, jdId }: StartAnalysisButtonProps
     }
 
     toast.success("Gap analysis complete — starting interview");
-    router.push(`/apply/${data.id}`);
+    router.push(`/apply/${data.data.resume_version.id}`);
   }
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { FileDown, Loader2, RefreshCw } from "lucide-react";
@@ -9,15 +10,14 @@ interface RewritePanelProps {
   versionId: string;
   initialStatus: string;
   initialPdfPath: string | null;
-  onReady: () => void;
 }
 
 export function RewritePanel({
   versionId,
   initialStatus,
   initialPdfPath,
-  onReady,
 }: RewritePanelProps) {
+  const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ export function RewritePanel({
 
     setStatus("ready");
     toast.success("Resume rewritten successfully!");
-    onReady();
+    router.refresh();
     setLoading(false);
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,15 +17,14 @@ interface InterviewChatProps {
   sessionId: string;
   initialStatus: string;
   initialTranscript: Message[];
-  onCompleted: () => void;
 }
 
 export function InterviewChat({
   sessionId,
   initialStatus,
   initialTranscript,
-  onCompleted,
 }: InterviewChatProps) {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>(initialTranscript);
   const [status, setStatus] = useState(initialStatus);
   const [input, setInput] = useState("");
@@ -81,7 +81,7 @@ export function InterviewChat({
     if (updated?.status === "completed") {
       setStatus("completed");
       toast.success("Interview complete! You can now generate your resume.");
-      onCompleted();
+      router.refresh();
     }
 
     setLoading(false);

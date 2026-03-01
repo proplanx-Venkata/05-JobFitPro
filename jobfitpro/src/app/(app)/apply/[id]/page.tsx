@@ -115,8 +115,9 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
         </CardContent>
       </Card>
 
-      {/* Interview — show from interview step onwards */}
-      {(currentStep === "interview" ||
+      {/* Interview — show from gap_analysis step onwards so user can start it */}
+      {(currentStep === "gap_analysis" ||
+        currentStep === "interview" ||
         currentStep === "rewrite" ||
         currentStep === "cover_letter" ||
         currentStep === "ats_score") && session && (
@@ -129,10 +130,6 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
               sessionId={session.id}
               initialStatus={session.status}
               initialTranscript={transcript as { role: "assistant" | "user"; content: string }[]}
-              onCompleted={() => {
-                // Page will show rewrite step after refresh — no client refresh needed here
-                // The parent server component re-renders on navigation
-              }}
             />
           </CardContent>
         </Card>
@@ -151,7 +148,6 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
               versionId={id}
               initialStatus={version.status}
               initialPdfPath={version.output_storage_path}
-              onReady={() => {}}
             />
           </CardContent>
         </Card>

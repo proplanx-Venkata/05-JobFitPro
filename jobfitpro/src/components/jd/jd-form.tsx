@@ -31,7 +31,7 @@ export function JdForm() {
     }
 
     toast.success("Job description added!");
-    router.push(`/jds/${data.id}`);
+    router.push(`/jds/${data.data.id}`);
     router.refresh();
   }
 
@@ -53,7 +53,7 @@ export function JdForm() {
     }
 
     toast.success("Job description uploaded!");
-    router.push(`/jds/${data.id}`);
+    router.push(`/jds/${data.data.id}`);
     router.refresh();
   }
 

@@ -11,7 +11,8 @@ RULES:
 - Extract ONLY information explicitly present in the text.
 - Do NOT infer, assume, or hallucinate any content.
 - If a field is absent, use null for strings or [] for arrays.
-- Preserve exact dates, company names, job titles, and wording.`;
+- Preserve exact dates, company names, job titles, and wording.
+- For end_date: use null if no explicit end date appears in the text — never write "Present", "Current", or "Now" unless that exact word appears in the resume.`;
 
 const USER_PROMPT_TEMPLATE = `\
 Parse the resume below and return a JSON object with exactly this structure:

@@ -1,4 +1,5 @@
 import mammoth from "mammoth";
+import Anthropic from "@anthropic-ai/sdk";
 
 export interface ExtractResult {
   text: string;
@@ -6,19 +7,37 @@ export interface ExtractResult {
 }
 
 /**
- * Extracts plain text and page count from a PDF buffer.
- * pdf-parse is loaded dynamically to avoid Next.js bundling issues
- * (the library reads test fixtures at module load time).
+ * Extracts plain text and page count from a PDF buffer using Claude's
+ * native PDF document support. Handles all compression formats reliably.
  */
 async function extractFromPdf(buffer: Buffer): Promise<ExtractResult> {
-  // require() avoids ESM/CJS interop issues with pdf-parse v2 in Next.js.
-  // pdf-parse is in serverExternalPackages so it is never bundled.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const pdfParse = require("pdf-parse") as (
-    buffer: Buffer
-  ) => Promise<{ text: string; numpages: number }>;
-  const data = await pdfParse(buffer);
-  return { text: data.text, pageCount: data.numpages };
+  const client = new Anthropic();
+  const message = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 8096,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "document",
+            source: {
+              type: "base64",
+              media_type: "application/pdf",
+              data: buffer.toString("base64"),
+            },
+          },
+          {
+            type: "text",
+            text: "Extract all text from this PDF. Return ONLY the raw text, no commentary.",
+          },
+        ],
+      },
+    ],
+  });
+  const text = (message.content[0] as { type: "text"; text: string }).text;
+  const pageCount = Math.max(1, Math.ceil(text.length / 3000));
+  return { text, pageCount };
 }
 
 /**
