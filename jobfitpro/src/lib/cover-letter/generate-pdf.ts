@@ -26,7 +26,7 @@ export function generateCoverLetterPdf(
   jdTitle: string | null
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: MARGIN, size: "LETTER" });
+    const doc = new PDFDocument({ margin: MARGIN, size: "LETTER", bufferPages: true });
     const chunks: Buffer[] = [];
     doc.on("data", (chunk: Buffer) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -98,6 +98,21 @@ export function generateCoverLetterPdf(
 
     // ── Typed name ────────────────────────────────────────────────────────
     doc.font(FONT_BOLD).fontSize(SIZE_BODY).text(content.candidate_name);
+
+    // ── Page numbers ─────────────────────────────────────────────────────
+    const { count: totalPages } = doc.bufferedPageRange();
+    for (let i = 0; i < totalPages; i++) {
+      doc.switchToPage(i);
+      doc
+        .font(FONT_REGULAR)
+        .fontSize(SIZE_CONTACT)
+        .text(
+          `Page ${i + 1} of ${totalPages}`,
+          MARGIN,
+          doc.page.height - MARGIN + 10,
+          { width: CONTENT_WIDTH, align: "center" }
+        );
+    }
 
     doc.end();
   });

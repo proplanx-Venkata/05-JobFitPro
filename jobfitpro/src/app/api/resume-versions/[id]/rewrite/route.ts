@@ -57,11 +57,11 @@ export async function POST(
       { status: 404 }
     );
   }
-  if (version.status !== "pending" && version.status !== "error") {
+  if (version.status !== "pending" && version.status !== "error" && version.status !== "ready") {
     return NextResponse.json<ApiResponse<never>>(
       {
         success: false,
-        error: `Cannot rewrite a version with status "${version.status}". Only pending or error versions can be rewritten.`,
+        error: `Cannot rewrite a version with status "${version.status}".`,
       },
       { status: 409 }
     );
