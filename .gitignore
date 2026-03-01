@@ -1,0 +1,15 @@
+# Session / auth artifacts
+*_cookies.txt
+Session.txt
+
+# Personal files
+*.pdf
+!test_resume.pdf
+!test_jd.pdf
+
+# Claude memory (auto-managed, not part of source)
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
