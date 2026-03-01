@@ -63,25 +63,64 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 2. Quota check ───────────────────────────────────────────────────────
-  const { data: canCreate, error: quotaError } = await supabase.rpc(
-    "can_create_version",
-    { p_user_id: user.id }
-  );
-  if (quotaError) {
+  // Limits are configurable via env vars so they can be changed without a
+  // DB migration. Defaults mirror the original spec (2 free / 10 paid).
+  const freeLimit = parseInt(process.env.QUOTA_FREE_LIMIT ?? "2", 10);
+  const paidMonthlyLimit = parseInt(process.env.QUOTA_PAID_MONTHLY_LIMIT ?? "10", 10);
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("tier, monthly_version_count, monthly_reset_at")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError || !profile) {
     return NextResponse.json<ApiResponse<never>>(
       { success: false, error: "Could not verify quota." },
       { status: 500 }
     );
   }
-  if (!canCreate) {
-    return NextResponse.json<ApiResponse<never>>(
-      {
-        success: false,
-        error:
-          "Version limit reached. Upgrade to paid or wait for your monthly reset.",
-      },
-      { status: 403 }
-    );
+
+  if (profile.tier === "free") {
+    const { data: totalCount } = await supabase.rpc("get_user_version_count", {
+      p_user_id: user.id,
+    });
+    if ((totalCount ?? 0) >= freeLimit) {
+      return NextResponse.json<ApiResponse<never>>(
+        {
+          success: false,
+          error: "Version limit reached. Upgrade to paid or wait for your monthly reset.",
+        },
+        { status: 403 }
+      );
+    }
+  } else {
+    // paid tier: monthly limit with auto-reset
+    const now = new Date();
+    const resetAt = new Date(profile.monthly_reset_at);
+    let monthlyCount = profile.monthly_version_count ?? 0;
+
+    if (now >= resetAt) {
+      // Advance reset date to the first of next calendar month (UTC)
+      const nextReset = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
+      );
+      await supabase
+        .from("profiles")
+        .update({ monthly_version_count: 0, monthly_reset_at: nextReset.toISOString() })
+        .eq("id", user.id);
+      monthlyCount = 0;
+    }
+
+    if (monthlyCount >= paidMonthlyLimit) {
+      return NextResponse.json<ApiResponse<never>>(
+        {
+          success: false,
+          error: "Monthly version limit reached. Wait for your monthly reset.",
+        },
+        { status: 403 }
+      );
+    }
   }
 
   // ── 3. Validate resume ───────────────────────────────────────────────────
@@ -199,19 +238,12 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 8. Increment monthly_version_count (paid quota tracking) ────────────
-  // Fetch current count and bump by 1. Safe to fail silently — quota check
-  // already passed; this is bookkeeping only.
-  const { data: profile } = await supabase
+  // profile was already fetched in the quota check above; just bump the count.
+  // Safe to fail silently — quota check already passed; this is bookkeeping only.
+  await supabase
     .from("profiles")
-    .select("monthly_version_count")
-    .eq("id", user.id)
-    .single();
-  if (profile) {
-    await supabase
-      .from("profiles")
-      .update({ monthly_version_count: profile.monthly_version_count + 1 })
-      .eq("id", user.id);
-  }
+    .update({ monthly_version_count: (profile.monthly_version_count ?? 0) + 1 })
+    .eq("id", user.id);
 
   return NextResponse.json<ApiResponse<ResumeVersionCreated>>(
     {
