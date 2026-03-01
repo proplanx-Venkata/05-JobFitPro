@@ -168,8 +168,17 @@ export function AtsScoreCard({ versionId, initialScore }: AtsScoreCardProps) {
         disabled={loading}
         className="gap-1.5 text-muted-foreground"
       >
-        <RefreshCw className="h-3.5 w-3.5" />
-        Re-score
+        {loading ? (
+          <>
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Re-scoring…
+          </>
+        ) : (
+          <>
+            <RefreshCw className="h-3.5 w-3.5" />
+            Re-score
+          </>
+        )}
       </Button>
     </div>
   );

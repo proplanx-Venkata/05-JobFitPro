@@ -66,14 +66,14 @@ export function RewritePanel({
             </p>
           </div>
           {pdfUrl ? (
-            <Button asChild size="sm" variant="outline" className="gap-1.5">
+            <Button asChild size="sm" variant="outline" className="gap-1.5" disabled={loading}>
               <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
                 <FileDown className="h-4 w-4" />
                 Download PDF
               </a>
             </Button>
           ) : (
-            <DownloadButton versionId={versionId} />
+            <DownloadButton versionId={versionId} disabled={loading} />
           )}
         </div>
         <Button
@@ -83,8 +83,17 @@ export function RewritePanel({
           disabled={loading}
           className="gap-1.5 text-muted-foreground"
         >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Regenerate
+          {loading ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Regenerating…
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-3.5 w-3.5" />
+              Regenerate
+            </>
+          )}
         </Button>
       </div>
     );
@@ -116,7 +125,7 @@ export function RewritePanel({
   );
 }
 
-function DownloadButton({ versionId }: { versionId: string }) {
+function DownloadButton({ versionId, disabled }: { versionId: string; disabled?: boolean }) {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -134,7 +143,7 @@ function DownloadButton({ versionId }: { versionId: string }) {
   }
 
   return (
-    <Button size="sm" variant="outline" onClick={fetchUrl} disabled={loading} className="gap-1.5">
+    <Button size="sm" variant="outline" onClick={fetchUrl} disabled={disabled || loading} className="gap-1.5">
       <FileDown className="h-4 w-4" />
       {loading ? "Loading…" : "Download PDF"}
     </Button>

@@ -69,7 +69,7 @@ export function CoverLetterPanel({
     }
   }
 
-  if (coverId && !loading) {
+  if (coverId) {
     return (
       <div className="space-y-4">
         <div className="rounded-lg border border-green-200 bg-green-50 p-4 flex items-center justify-between">
@@ -82,7 +82,7 @@ export function CoverLetterPanel({
             </p>
           </div>
           {pdfUrl ? (
-            <Button asChild size="sm" variant="outline" className="gap-1.5">
+            <Button asChild size="sm" variant="outline" className="gap-1.5" disabled={loading}>
               <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
                 <FileDown className="h-4 w-4" />
                 Download PDF
@@ -93,6 +93,7 @@ export function CoverLetterPanel({
               size="sm"
               variant="outline"
               onClick={() => fetchUrl(coverId)}
+              disabled={loading}
               className="gap-1.5"
             >
               <FileDown className="h-4 w-4" />
@@ -107,8 +108,17 @@ export function CoverLetterPanel({
           disabled={loading}
           className="gap-1.5 text-muted-foreground"
         >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Regenerate
+          {loading ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Regenerating…
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-3.5 w-3.5" />
+              Regenerate
+            </>
+          )}
         </Button>
       </div>
     );

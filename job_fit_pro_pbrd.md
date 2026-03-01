@@ -113,3 +113,42 @@ Key points:
 
 **END OF DOCUMENT – JobFit Pro PBRD**
 
+---
+
+## Post-Launch Changes
+
+Changes shipped after initial build, grouped by category.
+
+### Bug Fixes
+
+| # | Description |
+|---|-------------|
+| 1 | **PDF extraction** — replaced `pdf-parse` with Claude's native document API. Handles real-world PDFs (embedded fonts, scanned layouts) that `pdf-parse` failed on. |
+| 2 | **Server Component callback props** — removed callback functions passed as props to Client Components; caused Next.js serialization crash. State changes now driven by `router.refresh()`. |
+| 3 | **JD form navigation** — fixed `data.data.id` path; form was reading `data.id` (undefined), so `router.push` navigated to `/apply/undefined`. |
+| 4 | **Gap Analysis step** — interview chat now shown from the `gap_analysis` step onward, so users can click "Start Interview" without waiting for a page transition. |
+| 5 | **Cover letter → ATS advance** — cover letter panel now calls `router.refresh()` after generation, which causes `resolveStep` to return `ats_score` and the ATS card to render. |
+| 6 | **`formatDateRange` null end date** — function no longer infers "Present" for null end dates; dates are omitted cleanly instead of showing incorrect "Present" label. |
+
+### Resume & Cover Letter PDF
+
+| # | Description |
+|---|-------------|
+| 1 | **Page numbers** — both resume and cover letter PDFs now render a centred `Page N of N` footer on every page using pdfkit's `bufferedPageRange()`. |
+| 2 | **Justified body text** — summary, bullet points, and project descriptions use `align: "justify"` for a polished, ATS-safe layout. |
+
+### Configuration
+
+| # | Description |
+|---|-------------|
+| 1 | **Quota env vars** — `QUOTA_FREE_LIMIT` (default 2) and `QUOTA_PAID_MONTHLY_LIMIT` (default 10) control tier limits without a DB migration. |
+| 2 | **Quota check location** — moved from a Postgres RPC (`can_create_version`) to the API route layer, giving direct access to env vars and simpler error handling. |
+
+### New Features
+
+| # | Description |
+|---|-------------|
+| 1 | **Re-interview** — new `POST /api/interview-sessions/[id]/reset` endpoint resets the session (`status=pending`, empty transcript, `approved_answers=null`, `question_count=0`) and its linked resume_version (`status=pending`, clears rewritten content and PDF paths). `identified_gaps` is preserved so gap analysis is not repeated. A `ReInterviewButton` component in the ATS score card triggers this flow and calls `router.refresh()` to return the user to the gap_analysis step. |
+| 2 | **Loading UX — Re-score** — ATS score card Re-score button now shows a `Loader2` spinner and "Re-scoring…" label while the API call is in flight. |
+| 3 | **Loading UX — Regenerate** — both the Rewrite and Cover Letter panels now show a `Loader2` spinner and "Regenerating…" label on the Regenerate button during generation. Download PDF buttons are disabled (`disabled={loading}`) while generation is running. |
+

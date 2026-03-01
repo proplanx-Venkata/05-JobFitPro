@@ -7,6 +7,7 @@ import { InterviewChat } from "@/components/apply/interview-chat";
 import { RewritePanel } from "@/components/apply/rewrite-panel";
 import { CoverLetterPanel } from "@/components/apply/cover-letter-panel";
 import { AtsScoreCard } from "@/components/apply/ats-score-card";
+import { ReInterviewButton } from "@/components/apply/re-interview-button";
 import { Building2, Briefcase } from "lucide-react";
 import type { Gap } from "@/types/gap";
 import type { TranscriptMessage } from "@/types/interview";
@@ -190,6 +191,12 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
                   : null
               }
             />
+            {session && (
+              <>
+                <hr className="my-2 border-border" />
+                <ReInterviewButton sessionId={session.id} />
+              </>
+            )}
           </CardContent>
         </Card>
       )}
