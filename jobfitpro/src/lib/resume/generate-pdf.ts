@@ -59,7 +59,7 @@ export function generateResumePdf(resume: ParsedResume): Promise<Buffer> {
     // ── Summary ──────────────────────────────────────────────────────────────
     if (resume.summary) {
       sectionHeader(doc, "SUMMARY");
-      doc.font(FONT_REGULAR).fontSize(SIZE_BODY).text(resume.summary, { align: "left" });
+      doc.font(FONT_REGULAR).fontSize(SIZE_BODY).text(resume.summary, { align: "justify" });
       doc.moveDown(0.5);
     }
 
@@ -100,7 +100,7 @@ export function generateResumePdf(resume: ParsedResume): Promise<Buffer> {
           for (const bullet of job.bullets) {
             doc.text(`\u2022  ${bullet}`, MARGIN + 12, doc.y, {
               width: CONTENT_WIDTH - 12,
-              align: "left",
+              align: "justify",
             });
             doc.moveDown(0.15);
           }
@@ -185,7 +185,7 @@ export function generateResumePdf(resume: ParsedResume): Promise<Buffer> {
             .text(`Technologies: ${proj.technologies.join(", ")}`);
         }
         if (proj.description) {
-          doc.font(FONT_REGULAR).fontSize(SIZE_BODY).text(proj.description);
+          doc.font(FONT_REGULAR).fontSize(SIZE_BODY).text(proj.description, { align: "justify" });
         }
         doc.moveDown(0.3);
       }
@@ -198,6 +198,22 @@ export function generateResumePdf(resume: ParsedResume): Promise<Buffer> {
         .font(FONT_REGULAR)
         .fontSize(SIZE_BODY)
         .text(resume.languages.join(", "));
+    }
+
+    // ── Page numbers ─────────────────────────────────────────────────────────
+    // bufferPages: true lets us revisit every page after content is laid out.
+    const { count: totalPages } = doc.bufferedPageRange();
+    for (let i = 0; i < totalPages; i++) {
+      doc.switchToPage(i);
+      doc
+        .font(FONT_REGULAR)
+        .fontSize(SIZE_SMALL)
+        .text(
+          `Page ${i + 1} of ${totalPages}`,
+          MARGIN,
+          doc.page.height - MARGIN + 10,
+          { width: CONTENT_WIDTH, align: "center" }
+        );
     }
 
     doc.end();
@@ -246,6 +262,6 @@ function formatDateRange(
 ): string {
   if (!start && !end) return "";
   if (!start) return end ?? "";
-  if (!end) return `${start} – Present`;
+  if (!end) return start; // no end date in source — don't infer "Present"
   return `${start} – ${end}`;
 }
