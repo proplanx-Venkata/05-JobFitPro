@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ export function CoverLetterPanel({
   versionId,
   existingCoverId,
 }: CoverLetterPanelProps) {
+  const router = useRouter();
   const [coverId, setCoverId] = useState<string | null>(existingCoverId);
   const [loading, setLoading] = useState(false);
   const [recruiterName, setRecruiterName] = useState("");
@@ -52,6 +54,7 @@ export function CoverLetterPanel({
     }
 
     toast.success("Cover letter generated!");
+    router.refresh();
     setLoading(false);
   }
 
