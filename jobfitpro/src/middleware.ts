@@ -71,7 +71,8 @@ export async function middleware(request: NextRequest) {
       .split(",")
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
-    if (!adminEmails.includes((user.email ?? "").toLowerCase())) {
+    // If ADMIN_EMAILS is empty/unset, deny everyone — never grant open admin access
+    if (adminEmails.length === 0 || !adminEmails.includes((user.email ?? "").toLowerCase())) {
       if (isAdminApiRoute) {
         return NextResponse.json(
           { success: false, error: "Forbidden" },

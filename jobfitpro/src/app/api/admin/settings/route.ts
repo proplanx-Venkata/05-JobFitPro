@@ -29,6 +29,12 @@ export async function GET() {
   });
 }
 
+const ALLOWED_SETTINGS_KEYS = [
+  "signup_enabled",
+  "quota_free_limit",
+  "quota_paid_monthly_limit",
+] as const;
+
 export async function PATCH(request: NextRequest) {
   let body: { key?: string; value?: Json };
   try {
@@ -44,6 +50,16 @@ export async function PATCH(request: NextRequest) {
   if (!key || value === undefined) {
     return NextResponse.json<ApiResponse<never>>(
       { success: false, error: "key and value are required." },
+      { status: 400 }
+    );
+  }
+
+  if (!(ALLOWED_SETTINGS_KEYS as readonly string[]).includes(key)) {
+    return NextResponse.json<ApiResponse<never>>(
+      {
+        success: false,
+        error: `Invalid key "${key}". Allowed keys: ${ALLOWED_SETTINGS_KEYS.join(", ")}.`,
+      },
       { status: 400 }
     );
   }

@@ -43,25 +43,36 @@ export async function POST(
     );
   }
 
-  // ── 1. Fetch resume_version ───────────────────────────────────────────────
+  // ── 1. Atomically claim the version by transitioning to "generating" ────────
+  // Using a conditional update (WHERE status IN allowed) prevents two concurrent
+  // rewrite requests from both passing a status check and burning double Claude tokens.
   const { data: version, error: vErr } = await supabase
     .from("resume_versions")
-    .select("*")
+    .update({ status: "generating" })
     .eq("id", id)
     .eq("user_id", user.id)
+    .in("status", ["pending", "error", "ready"])
+    .select("*")
     .single();
 
   if (vErr || !version) {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Resume version not found." },
-      { status: 404 }
-    );
-  }
-  if (version.status !== "pending" && version.status !== "error" && version.status !== "ready") {
+    // Either not found, wrong owner, or already generating
+    const { data: existing } = await supabase
+      .from("resume_versions")
+      .select("status")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .single();
+    if (!existing) {
+      return NextResponse.json<ApiResponse<never>>(
+        { success: false, error: "Resume version not found." },
+        { status: 404 }
+      );
+    }
     return NextResponse.json<ApiResponse<never>>(
       {
         success: false,
-        error: `Cannot rewrite a version with status "${version.status}".`,
+        error: `Cannot rewrite a version with status "${existing.status}".`,
       },
       { status: 409 }
     );
@@ -129,13 +140,8 @@ export async function POST(
     );
   }
 
-  // ── 5. Mark as generating ─────────────────────────────────────────────────
-  await supabase
-    .from("resume_versions")
-    .update({ status: "generating" })
-    .eq("id", id);
-
   // ── 6. Rewrite with Claude ────────────────────────────────────────────────
+  // (status already set to "generating" atomically in step 1)
   let rewrittenResume: ParsedResume;
   try {
     rewrittenResume = await rewriteResumeWithClaude(

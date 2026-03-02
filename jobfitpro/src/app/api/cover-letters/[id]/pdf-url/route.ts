@@ -17,6 +17,7 @@ export async function GET(
     .from("cover_letters")
     .select("output_storage_path, resume_version_id")
     .eq("id", id)
+    .eq("user_id", user.id)
     .single();
 
   if (!cl?.output_storage_path) {

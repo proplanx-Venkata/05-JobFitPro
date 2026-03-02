@@ -27,6 +27,7 @@ export async function GET(
     .from("cover_letters")
     .select("generated_content, resume_version_id")
     .eq("id", id)
+    .eq("user_id", user.id)
     .single();
 
   if (clErr || !cl) {

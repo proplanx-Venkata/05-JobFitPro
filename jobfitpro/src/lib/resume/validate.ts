@@ -5,8 +5,9 @@ const ALLOWED_MIME_TYPES = [
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const MAX_PAGES = 3;
-const MIN_TEXT_LENGTH = 100; // sanity check for scanned / image-only files
-const MIN_ASCII_RATIO = 0.85; // English language check
+const MIN_TEXT_LENGTH = 100;  // sanity check for scanned / image-only files
+const MAX_TEXT_CHARS = 15_000; // ~3 pages × ~5000 chars — blocks font-size-1 exploits
+const MIN_ASCII_RATIO = 0.85;  // English language check
 
 export interface ValidationResult {
   valid: boolean;
@@ -48,6 +49,18 @@ export function validateExtractedText(text: string): ValidationResult {
       valid: false,
       error:
         "Could not extract readable text. The file may be scanned, image-only, or corrupt.",
+    };
+  }
+
+  // Hard cap on text length — blocks tiny-font exploits that pack far more
+  // content than a real 3-page resume could contain at readable font sizes.
+  if (trimmed.length > MAX_TEXT_CHARS) {
+    return {
+      valid: false,
+      error:
+        `Resume contains too much text (${trimmed.length.toLocaleString()} characters). ` +
+        `Maximum allowed is ${MAX_TEXT_CHARS.toLocaleString()}. ` +
+        "Please ensure your resume is a standard 3-page document.",
     };
   }
 

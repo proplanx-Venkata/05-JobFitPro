@@ -5,8 +5,9 @@ const ALLOWED_MIME_TYPES = [
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB upload cap
 const MAX_JD_PAGES = 5;
-const MAX_TEXT_SIZE_BYTES = 50 * 1024; // 50 KB for URL-sourced text
-const MIN_TEXT_LENGTH = 50; // sanity floor for empty / unreadable docs
+const MAX_TEXT_SIZE_BYTES = 50 * 1024;  // 50 KB — hard cap before Claude (all sources)
+const MAX_JD_TEXT_CHARS = 25_000;       // ~5 pages × 5,000 chars — blocks dense-file exploits
+const MIN_TEXT_LENGTH = 50;             // sanity floor for empty / unreadable docs
 
 export interface ValidationResult {
   valid: boolean;
@@ -56,14 +57,28 @@ export function validateJdTextSize(sizeBytes: number): ValidationResult {
 }
 
 export function validateJdText(text: string): ValidationResult {
-  if (text.trim().length < MIN_TEXT_LENGTH) {
+  const trimmed = text.trim();
+  if (trimmed.length < MIN_TEXT_LENGTH) {
     return {
       valid: false,
       error: "Could not extract readable text from the job description.",
     };
   }
+  // Hard cap — blocks dense-file exploits for DOCX and any source that slips
+  // past the pdf-parse preflight (e.g. complex-font PDFs read by Claude).
+  if (trimmed.length > MAX_JD_TEXT_CHARS) {
+    return {
+      valid: false,
+      error:
+        `Job description contains too much text (${trimmed.length.toLocaleString()} characters). ` +
+        `Maximum allowed is ${MAX_JD_TEXT_CHARS.toLocaleString()}.`,
+    };
+  }
   return { valid: true };
 }
+
+/** Export for use in the route's DOCX/file validation path. */
+export { MAX_JD_TEXT_CHARS };
 
 export function validateUrl(raw: string): ValidationResult {
   try {

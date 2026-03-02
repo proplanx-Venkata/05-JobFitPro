@@ -106,8 +106,6 @@ export async function parseResumeWithClaude(
   try {
     return JSON.parse(json) as ParsedResume;
   } catch {
-    throw new Error(
-      `Claude returned invalid JSON. Raw response: ${block.text.slice(0, 200)}`
-    );
+    throw new Error("Claude returned invalid JSON during resume parsing.");
   }
 }
