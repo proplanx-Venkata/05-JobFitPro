@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSystemSetting } from "@/lib/admin/get-setting";
 import type { SignupRequest, ApiResponse, AuthResponse } from "@/types/api";
 
 /**
@@ -18,6 +19,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<ApiResponse<never>>(
         { success: false, error: "Email and password are required" },
         { status: 400 }
+      );
+    }
+
+    // Check if signups are currently open
+    const signupEnabled = await getSystemSetting("signup_enabled");
+    if (signupEnabled === false) {
+      return NextResponse.json<ApiResponse<never>>(
+        { success: false, error: "Signups are currently closed." },
+        { status: 403 }
       );
     }
 

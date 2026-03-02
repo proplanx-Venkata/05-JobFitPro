@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { analyzeGapsWithClaude } from "@/lib/gap/analyze-with-claude";
+import { getSystemSetting } from "@/lib/admin/get-setting";
 import type { ApiResponse } from "@/types/api";
 import type { Database } from "@/types/database";
 import type { ParsedResume } from "@/types/resume";
@@ -63,10 +64,19 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 2. Quota check ───────────────────────────────────────────────────────
-  // Limits are configurable via env vars so they can be changed without a
-  // DB migration. Defaults mirror the original spec (2 free / 10 paid).
-  const freeLimit = parseInt(process.env.QUOTA_FREE_LIMIT ?? "2", 10);
-  const paidMonthlyLimit = parseInt(process.env.QUOTA_PAID_MONTHLY_LIMIT ?? "10", 10);
+  // Read limits from system_settings (admin-controlled), fall back to env vars.
+  const [dbFreeLimit, dbPaidLimit] = await Promise.all([
+    getSystemSetting("quota_free_limit"),
+    getSystemSetting("quota_paid_monthly_limit"),
+  ]);
+  const freeLimit =
+    typeof dbFreeLimit === "number"
+      ? dbFreeLimit
+      : parseInt(process.env.QUOTA_FREE_LIMIT ?? "2", 10);
+  const paidMonthlyLimit =
+    typeof dbPaidLimit === "number"
+      ? dbPaidLimit
+      : parseInt(process.env.QUOTA_PAID_MONTHLY_LIMIT ?? "10", 10);
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")

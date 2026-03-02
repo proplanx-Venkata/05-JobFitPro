@@ -292,6 +292,13 @@ export type Database = {
         Relationships: [];
       };
 
+      system_settings: {
+        Row: { key: string; value: Json; updated_at: string };
+        Insert: { key: string; value: Json; updated_at?: string };
+        Update: { key?: string; value?: Json; updated_at?: string };
+        Relationships: [];
+      };
+
       ats_scores: {
         Row: {
           id: string;

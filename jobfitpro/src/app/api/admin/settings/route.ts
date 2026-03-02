@@ -1,0 +1,69 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { ApiResponse } from "@/types/api";
+import type { Json } from "@/types/database";
+
+export interface SystemSetting {
+  key: string;
+  value: Json;
+  updated_at: string;
+}
+
+export async function GET() {
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("system_settings")
+    .select("key, value, updated_at")
+    .order("key");
+
+  if (error) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json<ApiResponse<SystemSetting[]>>({
+    success: true,
+    data: data ?? [],
+  });
+}
+
+export async function PATCH(request: NextRequest) {
+  let body: { key?: string; value?: Json };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Invalid request body." },
+      { status: 400 }
+    );
+  }
+
+  const { key, value } = body;
+  if (!key || value === undefined) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "key and value are required." },
+      { status: 400 }
+    );
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("system_settings")
+    .upsert({ key, value, updated_at: new Date().toISOString() })
+    .select("key, value, updated_at")
+    .single();
+
+  if (error) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json<ApiResponse<SystemSetting>>({
+    success: true,
+    data: data,
+  });
+}

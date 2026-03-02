@@ -42,16 +42,44 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect /api/* routes, excluding /api/auth/*
   const { pathname } = request.nextUrl;
   const isApiRoute = pathname.startsWith("/api/");
   const isAuthRoute = pathname.startsWith("/api/auth/");
 
+  // Protect /api/* routes, excluding /api/auth/*
   if (isApiRoute && !isAuthRoute && !user) {
     return NextResponse.json(
       { success: false, error: "Unauthorized" },
       { status: 401 }
     );
+  }
+
+  // Protect /admin/* and /api/admin/* routes
+  const isAdminUiRoute = pathname.startsWith("/admin");
+  const isAdminApiRoute = pathname.startsWith("/api/admin/");
+  if (isAdminUiRoute || isAdminApiRoute) {
+    if (!user) {
+      if (isAdminApiRoute) {
+        return NextResponse.json(
+          { success: false, error: "Unauthorized" },
+          { status: 401 }
+        );
+      }
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (!adminEmails.includes((user.email ?? "").toLowerCase())) {
+      if (isAdminApiRoute) {
+        return NextResponse.json(
+          { success: false, error: "Forbidden" },
+          { status: 403 }
+        );
+      }
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 
   return response;
