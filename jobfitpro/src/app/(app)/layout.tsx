@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { Sidebar } from "@/components/layout/sidebar";
-import { Header } from "@/components/layout/header";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default async function AppLayout({
   children,
@@ -32,16 +31,11 @@ export default async function AppLayout({
     .slice(0, 2);
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <Sidebar />
-      <div className="ml-60 flex flex-col min-h-screen">
-        <Header
-          title="JobFit Pro"
-          userEmail={user.email}
-          userInitials={initials || "U"}
-        />
-        <main className="flex-1 p-6">{children}</main>
-      </div>
-    </div>
+    <AppShell
+      userEmail={user.email}
+      userInitials={initials || "U"}
+    >
+      {children}
+    </AppShell>
   );
 }

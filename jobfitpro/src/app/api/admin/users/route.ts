@@ -29,14 +29,23 @@ export async function GET() {
   }
 
   // Fetch total version counts for all users in parallel
-  const usersWithCounts = await Promise.all(
-    (profiles ?? []).map(async (profile) => {
-      const { data: count } = await admin.rpc("get_user_version_count", {
-        p_user_id: profile.id,
-      });
-      return { ...profile, total_version_count: count ?? 0 } as AdminUser;
-    })
-  );
+  let usersWithCounts: AdminUser[];
+  try {
+    usersWithCounts = await Promise.all(
+      (profiles ?? []).map(async (profile) => {
+        const { data: count } = await admin.rpc("get_user_version_count", {
+          p_user_id: profile.id,
+        });
+        return { ...profile, total_version_count: count ?? 0 } as AdminUser;
+      })
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to fetch user counts";
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: message },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json<ApiResponse<AdminUser[]>>({
     success: true,

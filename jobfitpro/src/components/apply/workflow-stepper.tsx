@@ -24,7 +24,8 @@ export function WorkflowStepper({ currentStep }: WorkflowStepperProps) {
   const currentIndex = STEPS.findIndex((s) => s.id === currentStep);
 
   return (
-    <div className="flex items-center gap-0">
+    <div className="overflow-x-auto -mx-1 px-1">
+    <div className="flex items-center gap-0 min-w-max">
       {STEPS.map((step, i) => {
         const isCompleted = i < currentIndex;
         const isCurrent = i === currentIndex;
@@ -63,6 +64,7 @@ export function WorkflowStepper({ currentStep }: WorkflowStepperProps) {
           </div>
         );
       })}
+    </div>
     </div>
   );
 }

@@ -51,24 +51,24 @@ export function AtsScoreCard({ versionId, initialScore }: AtsScoreCardProps) {
 
   async function handleScore() {
     setLoading(true);
-
-    const res = await fetch("/api/ats-scores", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resume_version_id: versionId }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      toast.error(data.error ?? "Scoring failed");
+    try {
+      const res = await fetch("/api/ats-scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resume_version_id: versionId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Scoring failed");
+        return;
+      }
+      setScore(data.data ?? data);
+      toast.success("ATS score calculated!");
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setScore(data.data ?? data);
-    toast.success("ATS score calculated!");
-    setLoading(false);
   }
 
   if (!score) {
@@ -102,7 +102,7 @@ export function AtsScoreCard({ versionId, initialScore }: AtsScoreCardProps) {
   return (
     <div className="space-y-5">
       {/* Overall score */}
-      <div className="flex items-center gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="text-center">
           <p
             className={cn(

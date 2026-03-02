@@ -25,47 +25,49 @@ export function CoverLetterPanel({
 
   async function handleGenerate() {
     setLoading(true);
-
-    const res = await fetch("/api/cover-letters", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        resume_version_id: versionId,
-        recruiter_name: recruiterName || undefined,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      toast.error(data.error ?? "Failed to generate cover letter");
+    try {
+      const res = await fetch("/api/cover-letters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resume_version_id: versionId,
+          recruiter_name: recruiterName || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to generate cover letter");
+        return;
+      }
+      const newId = data.id ?? data.data?.id;
+      setCoverId(newId);
+      // Get signed URL (best-effort — download button still works if this fails)
+      const urlRes = await fetch(`/api/cover-letters/${newId}/pdf-url`);
+      if (urlRes.ok) {
+        const { url } = await urlRes.json();
+        setPdfUrl(url);
+      }
+      toast.success("Cover letter generated!");
+      router.refresh();
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const newId = data.id ?? data.data?.id;
-    setCoverId(newId);
-
-    // Get signed URL
-    const urlRes = await fetch(`/api/cover-letters/${newId}/pdf-url`);
-    if (urlRes.ok) {
-      const { url } = await urlRes.json();
-      setPdfUrl(url);
-    }
-
-    toast.success("Cover letter generated!");
-    router.refresh();
-    setLoading(false);
   }
 
   async function fetchUrl(id: string) {
-    const res = await fetch(`/api/cover-letters/${id}/pdf-url`);
-    if (res.ok) {
-      const { url } = await res.json();
-      setPdfUrl(url);
-      window.open(url, "_blank");
-    } else {
-      toast.error("Could not retrieve download link");
+    try {
+      const res = await fetch(`/api/cover-letters/${id}/pdf-url`);
+      if (res.ok) {
+        const { url } = await res.json();
+        setPdfUrl(url);
+        window.open(url, "_blank");
+      } else {
+        toast.error("Could not retrieve download link");
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
     }
   }
 

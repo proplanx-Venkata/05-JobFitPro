@@ -25,32 +25,31 @@ export function RewritePanel({
   async function handleRewrite() {
     setLoading(true);
     setStatus("generating");
-
-    const res = await fetch(`/api/resume-versions/${versionId}/rewrite`, {
-      method: "POST",
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-      toast.error(data.error ?? "Rewrite failed");
+    try {
+      const res = await fetch(`/api/resume-versions/${versionId}/rewrite`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Rewrite failed");
+        setStatus("error");
+        return;
+      }
+      // Best-effort signed URL fetch — download button still works if this fails
+      const signedRes = await fetch(`/api/resume-versions/${versionId}/pdf-url`);
+      if (signedRes.ok) {
+        const { url } = await signedRes.json();
+        setPdfUrl(url);
+      }
+      setStatus("ready");
+      toast.success("Resume rewritten successfully!");
+      router.refresh();
+    } catch {
+      toast.error("Network error. Please try again.");
       setStatus("error");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const signedRes = await fetch(
-      `/api/resume-versions/${versionId}/pdf-url`
-    );
-
-    if (signedRes.ok) {
-      const { url } = await signedRes.json();
-      setPdfUrl(url);
-    }
-
-    setStatus("ready");
-    toast.success("Resume rewritten successfully!");
-    router.refresh();
-    setLoading(false);
   }
 
   if (status === "ready" || initialPdfPath) {
@@ -138,20 +137,23 @@ export function RewritePanel({
 }
 
 function DownloadButton({ versionId, disabled }: { versionId: string; disabled?: boolean }) {
-  const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function fetchUrl() {
     setLoading(true);
-    const res = await fetch(`/api/resume-versions/${versionId}/pdf-url`);
-    if (res.ok) {
-      const { url: signed } = await res.json();
-      setUrl(signed);
-      window.open(signed, "_blank");
-    } else {
-      toast.error("Could not retrieve download link");
+    try {
+      const res = await fetch(`/api/resume-versions/${versionId}/pdf-url`);
+      if (res.ok) {
+        const { url: signed } = await res.json();
+        window.open(signed, "_blank");
+      } else {
+        toast.error("Could not retrieve download link");
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (

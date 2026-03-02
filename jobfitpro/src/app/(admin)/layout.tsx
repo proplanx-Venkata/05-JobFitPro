@@ -28,10 +28,10 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-neutral-50">
       {/* Admin top nav */}
-      <nav className="bg-neutral-900 text-white px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <span className="font-semibold text-sm tracking-wide text-neutral-300 uppercase">
-            JobFit Pro — Admin
+      <nav className="bg-neutral-900 text-white px-4 md:px-6 py-3 flex flex-wrap items-center justify-between gap-y-2">
+        <div className="flex items-center gap-4 md:gap-6">
+          <span className="font-semibold text-xs md:text-sm tracking-wide text-neutral-300 uppercase">
+            Admin
           </span>
           <Link
             href="/admin"
@@ -52,18 +52,20 @@ export default async function AdminLayout({
             Settings
           </Link>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-neutral-400">{user.email}</span>
+        <div className="flex items-center gap-3 md:gap-4">
+          <span className="hidden sm:inline text-xs text-neutral-400 truncate max-w-[160px]">
+            {user.email}
+          </span>
           <Link
             href="/dashboard"
             className="text-xs text-neutral-400 hover:text-white transition-colors"
           >
-            Back to App
+            ← App
           </Link>
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>
+      <main className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">{children}</main>
     </div>
   );
 }

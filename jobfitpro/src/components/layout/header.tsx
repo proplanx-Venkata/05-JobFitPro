@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Menu } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -16,21 +16,46 @@ interface HeaderProps {
   title: string;
   userEmail?: string;
   userInitials?: string;
+  onMenuClick?: () => void;
 }
 
-export function Header({ title, userEmail, userInitials = "U" }: HeaderProps) {
+export function Header({
+  title,
+  userEmail,
+  userInitials = "U",
+  onMenuClick,
+}: HeaderProps) {
   const router = useRouter();
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    toast.success("Signed out");
-    router.push("/login");
-    router.refresh();
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (!res.ok) {
+        toast.error("Sign out failed. Please try again.");
+        return;
+      }
+      toast.success("Signed out");
+      router.push("/login");
+      router.refresh();
+    } catch {
+      toast.error("Network error. Please try again.");
+    }
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-white px-6">
-      <h1 className="text-lg font-semibold">{title}</h1>
+    <header className="flex h-16 items-center justify-between border-b bg-white px-4 md:px-6">
+      <div className="flex items-center gap-3">
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={onMenuClick}
+          className="md:hidden rounded-md p-1.5 text-muted-foreground hover:bg-accent"
+          aria-label="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <h1 className="text-base md:text-lg font-semibold">{title}</h1>
+      </div>
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">

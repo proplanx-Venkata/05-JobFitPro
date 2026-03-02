@@ -37,20 +37,22 @@ export function InterviewChat({
 
   async function startSession() {
     setLoading(true);
-    const res = await fetch(`/api/interview-sessions/${sessionId}/start`, {
-      method: "POST",
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-      toast.error(data.error ?? "Failed to start interview");
+    try {
+      const res = await fetch(`/api/interview-sessions/${sessionId}/start`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to start interview");
+        return;
+      }
+      setMessages(data.data?.conversation_transcript ?? []);
+      setStatus("in_progress");
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setMessages(data.data?.conversation_transcript ?? []);
-    setStatus("in_progress");
-    setLoading(false);
   }
 
   async function sendReply() {
@@ -58,33 +60,30 @@ export function InterviewChat({
     const userMsg = input.trim();
     setInput("");
     setLoading(true);
-
     setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
-
-    const res = await fetch(`/api/interview-sessions/${sessionId}/reply`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: userMsg }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      toast.error(data.error ?? "Failed to send message");
+    try {
+      const res = await fetch(`/api/interview-sessions/${sessionId}/reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMsg }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to send message");
+        return;
+      }
+      const updated = data.data;
+      setMessages(updated?.conversation_transcript ?? []);
+      if (updated?.status === "completed") {
+        setStatus("completed");
+        toast.success("Interview complete! You can now generate your resume.");
+        router.refresh();
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const updated = data.data;
-    setMessages(updated?.conversation_transcript ?? []);
-
-    if (updated?.status === "completed") {
-      setStatus("completed");
-      toast.success("Interview complete! You can now generate your resume.");
-      router.refresh();
-    }
-
-    setLoading(false);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
