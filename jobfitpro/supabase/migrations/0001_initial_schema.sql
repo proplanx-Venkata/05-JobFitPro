@@ -405,7 +405,10 @@ create policy "storage outputs: owner select"
 -- QUOTA HELPER FUNCTIONS
 -- ---------------------------------------------------------------------------
 
--- Total resume_versions count for a user (all time)
+-- Total resume_versions count for a user (all time).
+-- Used by the API layer, which applies the actual limits via env vars
+-- (QUOTA_FREE_LIMIT, QUOTA_PAID_MONTHLY_LIMIT) so limits can be changed
+-- without a DB migration.
 create or replace function public.get_user_version_count(p_user_id uuid)
 returns int
 language sql
@@ -415,53 +418,4 @@ as $$
   select count(*)::int
   from public.resume_versions
   where user_id = p_user_id;
-$$;
-
--- Can this user create another resume version?
--- free:  max 2 total, ever
--- paid:  max 10 per calendar month (resets monthly)
-create or replace function public.can_create_version(p_user_id uuid)
-returns boolean
-language plpgsql
-stable
-security definer set search_path = public
-as $$
-declare
-  v_tier                  public.subscription_tier;
-  v_monthly_reset_at      timestamptz;
-  v_total_count           int;
-  v_monthly_count         int;
-begin
-  select tier, monthly_reset_at
-  into   v_tier, v_monthly_reset_at
-  from   public.profiles
-  where  id = p_user_id;
-
-  if not found then
-    return false;
-  end if;
-
-  if v_tier = 'free' then
-    v_total_count := public.get_user_version_count(p_user_id);
-    return v_total_count < 2;
-  end if;
-
-  -- paid tier: 10 per month
-  -- reset monthly_version_count if past reset date
-  if now() >= v_monthly_reset_at then
-    update public.profiles
-    set    monthly_version_count = 0,
-           monthly_reset_at      = date_trunc('month', now()) + interval '1 month'
-    where  id = p_user_id;
-
-    return true; -- count just reset to 0, so always allowed
-  end if;
-
-  select monthly_version_count
-  into   v_monthly_count
-  from   public.profiles
-  where  id = p_user_id;
-
-  return v_monthly_count < 10;
-end;
 $$;

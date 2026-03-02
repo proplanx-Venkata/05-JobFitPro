@@ -339,10 +339,6 @@ export type Database = {
         Args: { p_user_id: string };
         Returns: number;
       };
-      can_create_version: {
-        Args: { p_user_id: string };
-        Returns: boolean;
-      };
     };
 
     Enums: {
