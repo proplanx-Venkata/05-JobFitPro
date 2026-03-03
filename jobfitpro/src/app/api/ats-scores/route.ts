@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { scoreResumeWithClaude } from "@/lib/ats/score-with-claude";
 import { computeAtsScore } from "@/types/ats";
+import { logAiUsage } from "@/lib/ai/log-usage";
 import type { ApiResponse } from "@/types/api";
 import type { Database } from "@/types/database";
 import type { ParsedResume } from "@/types/resume";
@@ -125,8 +126,9 @@ export async function POST(request: NextRequest) {
   // ── 5. Score with Claude ──────────────────────────────────────────────────
   let scored;
   try {
-    const raw = await scoreResumeWithClaude(resumeToScore, jd.cleaned_text);
+    const { data: raw, inputTokens, outputTokens } = await scoreResumeWithClaude(resumeToScore, jd.cleaned_text);
     scored = computeAtsScore(raw);
+    logAiUsage({ userId: user.id, operation: "ats_score", inputTokens, outputTokens, model: "claude-haiku-4-5-20251001" });
   } catch {
     return NextResponse.json<ApiResponse<never>>(
       { success: false, error: "ATS scoring failed. Please try again." },

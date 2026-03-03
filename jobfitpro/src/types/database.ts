@@ -293,9 +293,34 @@ export type Database = {
       };
 
       system_settings: {
+        // Keys include: signup_enabled, quota_free_limit, quota_paid_monthly_limit,
+        //               ai_cost_input_per_million, ai_cost_output_per_million
         Row: { key: string; value: Json; updated_at: string };
         Insert: { key: string; value: Json; updated_at?: string };
         Update: { key?: string; value?: Json; updated_at?: string };
+        Relationships: [];
+      };
+
+      ai_usage_logs: {
+        Row: {
+          id: string;
+          user_id: string;
+          operation: string;
+          input_tokens: number;
+          output_tokens: number;
+          model: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          operation: string;
+          input_tokens: number;
+          output_tokens: number;
+          model: string;
+          created_at?: string;
+        };
+        Update: never;
         Relationships: [];
       };
 
@@ -343,6 +368,10 @@ export type Database = {
 
     Functions: {
       get_user_version_count: {
+        Args: { p_user_id: string };
+        Returns: number;
+      };
+      get_user_storage_bytes: {
         Args: { p_user_id: string };
         Returns: number;
       };

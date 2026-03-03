@@ -33,6 +33,8 @@ const ALLOWED_SETTINGS_KEYS = [
   "signup_enabled",
   "quota_free_limit",
   "quota_paid_monthly_limit",
+  "ai_cost_input_per_million",
+  "ai_cost_output_per_million",
 ] as const;
 
 export async function PATCH(request: NextRequest) {

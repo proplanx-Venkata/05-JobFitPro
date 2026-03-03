@@ -60,7 +60,7 @@ Return a JSON object with exactly this structure:
 export async function analyzeGapsWithClaude(
   parsedResume: ParsedResume,
   jdCleanedText: string
-): Promise<GapAnalysisResult> {
+): Promise<{ data: GapAnalysisResult; inputTokens: number; outputTokens: number }> {
   const resumeJson = JSON.stringify(parsedResume, null, 2);
 
   const message = await client.messages.create({
@@ -91,7 +91,11 @@ export async function analyzeGapsWithClaude(
     if (Array.isArray(result.gaps) && result.gaps.length > 10) {
       result.gaps = result.gaps.slice(0, 10);
     }
-    return result;
+    return {
+      data: result,
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+    };
   } catch {
     throw new Error("Claude returned invalid JSON during gap analysis.");
   }

@@ -45,7 +45,7 @@ export async function conductInterviewTurn(
   transcript: TranscriptMessage[],
   userMessage: string | null,
   questionsAsked: number
-): Promise<{ turn: InterviewTurn; updatedTranscript: TranscriptMessage[] }> {
+): Promise<{ turn: InterviewTurn; updatedTranscript: TranscriptMessage[]; inputTokens: number; outputTokens: number }> {
   const now = new Date().toISOString();
   const newTranscript: TranscriptMessage[] = [...transcript];
 
@@ -115,5 +115,10 @@ INSTRUCTION: ${instruction}`.trim();
     });
   }
 
-  return { turn, updatedTranscript: newTranscript };
+  return {
+    turn,
+    updatedTranscript: newTranscript,
+    inputTokens: message.usage.input_tokens,
+    outputTokens: message.usage.output_tokens,
+  };
 }

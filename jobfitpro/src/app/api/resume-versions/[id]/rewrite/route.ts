@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { rewriteResumeWithClaude } from "@/lib/resume/rewrite-with-claude";
 import { generateResumePdf } from "@/lib/resume/generate-pdf";
+import { logAiUsage } from "@/lib/ai/log-usage";
 import type { ApiResponse } from "@/types/api";
 import type { Database } from "@/types/database";
 import type { ParsedResume } from "@/types/resume";
@@ -144,11 +145,13 @@ export async function POST(
   // (status already set to "generating" atomically in step 1)
   let rewrittenResume: ParsedResume;
   try {
-    rewrittenResume = await rewriteResumeWithClaude(
+    const { data, inputTokens, outputTokens } = await rewriteResumeWithClaude(
       resume.parsed_content as unknown as ParsedResume,
       jd.cleaned_text,
       approvedAnswers
     );
+    rewrittenResume = data;
+    logAiUsage({ userId: user.id, operation: "rewrite", inputTokens, outputTokens, model: "claude-haiku-4-5-20251001" });
   } catch {
     await supabase
       .from("resume_versions")

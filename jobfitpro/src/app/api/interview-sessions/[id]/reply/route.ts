@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { conductInterviewTurn } from "@/lib/interview/conduct-with-claude";
+import { logAiUsage } from "@/lib/ai/log-usage";
 import type { ApiResponse } from "@/types/api";
 import type { Database } from "@/types/database";
 import type { GapAnalysisResult } from "@/types/gap";
@@ -106,6 +107,7 @@ export async function POST(
     updatedTranscript = result.updatedTranscript;
     done = result.turn.done;
     approvedAnswers = result.turn.answers_summary ?? null;
+    logAiUsage({ userId: user.id, operation: "interview", inputTokens: result.inputTokens, outputTokens: result.outputTokens, model: "claude-haiku-4-5-20251001" });
 
     if (!done && result.turn.question) {
       // Claude asked another question — count it

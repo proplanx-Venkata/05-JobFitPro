@@ -12,6 +12,7 @@ import {
   URL_TEXT_LIMIT_BYTES,
 } from "@/lib/jd/validate";
 import { cleanJdWithClaude } from "@/lib/jd/clean-with-claude";
+import { logAiUsage } from "@/lib/ai/log-usage";
 import type { ApiResponse } from "@/types/api";
 import type { Database } from "@/types/database";
 
@@ -212,7 +213,9 @@ async function ingestJd(params: {
   // ── 3. Clean with Claude ─────────────────────────────────────────────────
   let cleaned: { title: string | null; company: string | null; cleaned_text: string };
   try {
-    cleaned = await cleanJdWithClaude(rawText);
+    const { data, inputTokens, outputTokens } = await cleanJdWithClaude(rawText);
+    cleaned = data;
+    logAiUsage({ userId, operation: "jd_clean", inputTokens, outputTokens, model: "claude-haiku-4-5-20251001" });
   } catch {
     return NextResponse.json<ApiResponse<never>>(
       { success: false, error: "AI cleanup failed. Please try again." },

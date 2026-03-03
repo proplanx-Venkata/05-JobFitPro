@@ -19,13 +19,21 @@ export default async function AdminSettingsPage() {
     typeof settings["quota_paid_monthly_limit"] === "number"
       ? (settings["quota_paid_monthly_limit"] as number)
       : 10;
+  const inputCostPerMillion =
+    typeof settings["ai_cost_input_per_million"] === "number"
+      ? (settings["ai_cost_input_per_million"] as number)
+      : 0;
+  const outputCostPerMillion =
+    typeof settings["ai_cost_output_per_million"] === "number"
+      ? (settings["ai_cost_output_per_million"] as number)
+      : 0;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">System Settings</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Control signup access and quota limits. Changes take effect immediately.
+          Control signup access, quota limits, and AI cost tracking. Changes take effect immediately.
         </p>
       </div>
 
@@ -35,6 +43,8 @@ export default async function AdminSettingsPage() {
             signupEnabled={signupEnabled}
             freeLimit={freeLimit}
             paidLimit={paidLimit}
+            inputCostPerMillion={inputCostPerMillion}
+            outputCostPerMillion={outputCostPerMillion}
           />
         </CardContent>
       </Card>

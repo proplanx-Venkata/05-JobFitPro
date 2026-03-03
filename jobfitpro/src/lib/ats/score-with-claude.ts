@@ -73,7 +73,7 @@ Return a JSON object with exactly this structure:
 export async function scoreResumeWithClaude(
   resume: ParsedResume,
   jdCleanedText: string
-): Promise<AtsClaudeOutput> {
+): Promise<{ data: AtsClaudeOutput; inputTokens: number; outputTokens: number }> {
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 1024,
@@ -96,7 +96,11 @@ export async function scoreResumeWithClaude(
 
   const json = block.text.replace(/^```(?:json)?\n?|\n?```$/g, "").trim();
   try {
-    return JSON.parse(json) as AtsClaudeOutput;
+    return {
+      data: JSON.parse(json) as AtsClaudeOutput,
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+    };
   } catch {
     throw new Error(
       `Claude returned invalid JSON. Raw response: ${block.text.slice(0, 200)}`

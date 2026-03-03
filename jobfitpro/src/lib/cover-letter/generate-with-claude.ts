@@ -67,7 +67,7 @@ export async function generateCoverLetterWithClaude(
   jdCompany: string | null,
   approvedAnswers: Record<string, string>,
   recruiterName: string | null
-): Promise<CoverLetterContent> {
+): Promise<{ data: CoverLetterContent; inputTokens: number; outputTokens: number }> {
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 1024,
@@ -100,7 +100,11 @@ export async function generateCoverLetterWithClaude(
     if (!Array.isArray(content.paragraphs) || content.paragraphs.length !== 3) {
       throw new Error("Claude returned wrong number of paragraphs");
     }
-    return content;
+    return {
+      data: content,
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+    };
   } catch (err) {
     if (err instanceof SyntaxError) {
       throw new Error(

@@ -82,7 +82,7 @@ RESUME TEXT:
  */
 export async function parseResumeWithClaude(
   resumeText: string
-): Promise<ParsedResume> {
+): Promise<{ data: ParsedResume; inputTokens: number; outputTokens: number }> {
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 4096,
@@ -104,7 +104,11 @@ export async function parseResumeWithClaude(
   const json = block.text.replace(/^```(?:json)?\n?|\n?```$/g, "").trim();
 
   try {
-    return JSON.parse(json) as ParsedResume;
+    return {
+      data: JSON.parse(json) as ParsedResume,
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+    };
   } catch {
     throw new Error("Claude returned invalid JSON during resume parsing.");
   }

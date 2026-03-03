@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { conductInterviewTurn } from "@/lib/interview/conduct-with-claude";
+import { logAiUsage } from "@/lib/ai/log-usage";
 import type { ApiResponse } from "@/types/api";
 import type { Database } from "@/types/database";
 import type { GapAnalysisResult } from "@/types/gap";
@@ -69,12 +70,13 @@ export async function POST(
   let firstQuestion: string;
   let initialTranscript: TranscriptMessage[];
   try {
-    const { turn, updatedTranscript } = await conductInterviewTurn(
+    const { turn, updatedTranscript, inputTokens, outputTokens } = await conductInterviewTurn(
       gapResult.gaps,
       [],
       null, // no user message on start
       0     // no questions asked yet
     );
+    logAiUsage({ userId: user.id, operation: "interview", inputTokens, outputTokens, model: "claude-haiku-4-5-20251001" });
     if (turn.done || !turn.question) {
       // Edge case: no gaps to interview about
       firstQuestion = "It looks like your resume already covers the key requirements. No further questions — great work!";

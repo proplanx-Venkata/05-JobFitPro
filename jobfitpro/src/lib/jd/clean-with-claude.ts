@@ -47,7 +47,9 @@ export interface CleanedJd {
  *
  * Hard contract: never invent requirements — only retain what is present.
  */
-export async function cleanJdWithClaude(rawText: string): Promise<CleanedJd> {
+export async function cleanJdWithClaude(
+  rawText: string
+): Promise<{ data: CleanedJd; inputTokens: number; outputTokens: number }> {
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 4096,
@@ -69,7 +71,11 @@ export async function cleanJdWithClaude(rawText: string): Promise<CleanedJd> {
   const json = block.text.replace(/^```(?:json)?\n?|\n?```$/g, "").trim();
 
   try {
-    return JSON.parse(json) as CleanedJd;
+    return {
+      data: JSON.parse(json) as CleanedJd,
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+    };
   } catch {
     throw new Error("Claude returned invalid JSON during JD cleanup.");
   }

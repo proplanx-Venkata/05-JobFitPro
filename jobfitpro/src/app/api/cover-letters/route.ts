@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { generateCoverLetterWithClaude } from "@/lib/cover-letter/generate-with-claude";
 import { generateCoverLetterPdf } from "@/lib/cover-letter/generate-pdf";
+import { logAiUsage } from "@/lib/ai/log-usage";
 import type { ApiResponse } from "@/types/api";
 import type { Database } from "@/types/database";
 import type { ParsedResume } from "@/types/resume";
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
   // ── 7. Generate content with Claude ──────────────────────────────────────
   let content: CoverLetterContent;
   try {
-    content = await generateCoverLetterWithClaude(
+    const { data, inputTokens, outputTokens } = await generateCoverLetterWithClaude(
       resumeForCl,
       jd.cleaned_text,
       jd.title,
@@ -161,6 +162,8 @@ export async function POST(request: NextRequest) {
       approvedAnswers,
       recruiter_name ?? null
     );
+    content = data;
+    logAiUsage({ userId: user.id, operation: "cover_letter", inputTokens, outputTokens, model: "claude-haiku-4-5-20251001" });
   } catch {
     await markError();
     return NextResponse.json<ApiResponse<never>>(

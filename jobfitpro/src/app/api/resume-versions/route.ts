@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { analyzeGapsWithClaude } from "@/lib/gap/analyze-with-claude";
 import { getSystemSetting } from "@/lib/admin/get-setting";
+import { logAiUsage } from "@/lib/ai/log-usage";
 import type { ApiResponse } from "@/types/api";
 import type { Database } from "@/types/database";
 import type { ParsedResume } from "@/types/resume";
@@ -214,10 +215,12 @@ export async function POST(request: NextRequest) {
   // ── 6. Gap analysis with Claude ──────────────────────────────────────────
   let gapResult: GapAnalysisResult;
   try {
-    gapResult = await analyzeGapsWithClaude(
+    const { data, inputTokens, outputTokens } = await analyzeGapsWithClaude(
       resume.parsed_content as unknown as ParsedResume,
       jd.cleaned_text
     );
+    gapResult = data;
+    logAiUsage({ userId: user.id, operation: "gap_analysis", inputTokens, outputTokens, model: "claude-haiku-4-5-20251001" });
   } catch {
     // Roll back the version record so the user can retry cleanly
     await supabase.from("resume_versions").delete().eq("id", version.id);
