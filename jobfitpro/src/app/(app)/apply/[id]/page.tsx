@@ -8,6 +8,7 @@ import { RewritePanel } from "@/components/apply/rewrite-panel";
 import { CoverLetterPanel } from "@/components/apply/cover-letter-panel";
 import { AtsScoreCard } from "@/components/apply/ats-score-card";
 import { ReInterviewButton } from "@/components/apply/re-interview-button";
+import { InterviewPrepPanel } from "@/components/apply/interview-prep-panel";
 import { Building2, Briefcase } from "lucide-react";
 import type { Gap } from "@/types/gap";
 import type { TranscriptMessage } from "@/types/interview";
@@ -40,7 +41,7 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
   const { data: version } = await supabase
     .from("resume_versions")
     .select(
-      "id, status, output_storage_path, job_description_id, interview_sessions(id, status, identified_gaps, conversation_transcript, question_count)"
+      "id, status, output_storage_path, job_description_id, share_token, share_pin, interview_sessions(id, status, identified_gaps, conversation_transcript, question_count)"
     )
     .eq("id", id)
     .eq("user_id", user!.id)
@@ -66,16 +67,26 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
     .eq("resume_version_id", id)
     .single();
 
-  // Load latest ATS score (if any)
-  const { data: atsScore } = await supabase
-    .from("ats_scores")
-    .select(
-      "id, overall_score, category, keyword_match_score, format_score, skills_score, experience_score, missing_keywords, gap_explanations, passes_threshold"
-    )
-    .eq("resume_version_id", id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+  // Load post-rewrite ATS score (latest non-pre-rewrite) and pre-rewrite score in parallel
+  const [{ data: atsScore }, { data: preAtsScore }] = await Promise.all([
+    supabase
+      .from("ats_scores")
+      .select(
+        "id, overall_score, category, keyword_match_score, format_score, skills_score, experience_score, missing_keywords, gap_explanations, passes_threshold"
+      )
+      .eq("resume_version_id", id)
+      .eq("is_pre_rewrite", false)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single(),
+    supabase
+      .from("ats_scores")
+      .select("overall_score, category")
+      .eq("resume_version_id", id)
+      .eq("is_pre_rewrite", true)
+      .limit(1)
+      .single(),
+  ]);
 
   const interviewStatus = session?.status ?? "pending";
   const hasCoverLetter = !!coverLetter?.id;
@@ -149,6 +160,8 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
               versionId={id}
               initialStatus={version.status}
               initialPdfPath={version.output_storage_path}
+              initialShareToken={version.share_token ?? null}
+              initialSharePin={version.share_pin ?? null}
             />
           </CardContent>
         </Card>
@@ -190,6 +203,7 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
                     }
                   : null
               }
+              preRewriteScore={preAtsScore ?? null}
             />
             {session && (
               <>
@@ -197,6 +211,18 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
                 <ReInterviewButton sessionId={session.id} />
               </>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Interview Prep — bonus panel at final step */}
+      {currentStep === "ats_score" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Interview Prep</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <InterviewPrepPanel versionId={id} />
           </CardContent>
         </Card>
       )}

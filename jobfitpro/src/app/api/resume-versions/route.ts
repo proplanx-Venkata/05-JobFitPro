@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { analyzeGapsWithClaude } from "@/lib/gap/analyze-with-claude";
+import { scoreResumeWithClaude } from "@/lib/ats/score-with-claude";
+import { computeAtsScore } from "@/types/ats";
 import { getSystemSetting } from "@/lib/admin/get-setting";
 import { logAiUsage } from "@/lib/ai/log-usage";
 import type { ApiResponse } from "@/types/api";
@@ -250,7 +253,27 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // ── 8. Increment monthly_version_count (paid quota tracking) ────────────
+  // ── 8. Fire-and-forget pre-rewrite ATS score ─────────────────────────────
+  // Score the original (master) resume immediately so we can show before/after later.
+  (async () => {
+    try {
+      const { data: raw, inputTokens, outputTokens } = await scoreResumeWithClaude(
+        resume.parsed_content as unknown as ParsedResume,
+        jd.cleaned_text as string
+      );
+      const scored = computeAtsScore(raw);
+      const adminClient = createSupabaseAdminClient();
+      await adminClient.from("ats_scores").insert({
+        user_id: user.id,
+        resume_version_id: version.id,
+        ...scored,
+        is_pre_rewrite: true,
+      });
+      logAiUsage({ userId: user.id, operation: "ats_score", inputTokens, outputTokens, model: "claude-haiku-4-5-20251001" });
+    } catch { /* silent — never break main request */ }
+  })();
+
+  // ── 9. Increment monthly_version_count (paid quota tracking) ────────────
   // profile was already fetched in the quota check above; just bump the count.
   // Safe to fail silently — quota check already passed; this is bookkeeping only.
   await supabase
@@ -302,7 +325,7 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json<ApiResponse<Omit<ResumeVersionRow, "rewritten_content" | "output_storage_path">[]>>({
+  return NextResponse.json<ApiResponse<Omit<ResumeVersionRow, "rewritten_content" | "output_storage_path" | "share_token" | "share_pin">[]>>({
     success: true,
     data: data ?? [],
   });

@@ -6,7 +6,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileDown, Loader2, RefreshCw } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Eye, FileDown, Loader2, RefreshCw } from "lucide-react";
 
 interface CoverLetterPanelProps {
   versionId: string;
@@ -22,6 +28,10 @@ export function CoverLetterPanel({
   const [loading, setLoading] = useState(false);
   const [recruiterName, setRecruiterName] = useState("");
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  // PDF preview
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   async function handleGenerate() {
     setLoading(true);
@@ -41,7 +51,6 @@ export function CoverLetterPanel({
       }
       const newId = data.id ?? data.data?.id;
       setCoverId(newId);
-      // Get signed URL (best-effort — download button still works if this fails)
       const urlRes = await fetch(`/api/cover-letters/${newId}/pdf-url`);
       if (urlRes.ok) {
         const { url } = await urlRes.json();
@@ -71,6 +80,29 @@ export function CoverLetterPanel({
     }
   }
 
+  async function handlePreview() {
+    if (!coverId) return;
+    if (pdfUrl) {
+      setPreviewOpen(true);
+      return;
+    }
+    setPreviewLoading(true);
+    try {
+      const res = await fetch(`/api/cover-letters/${coverId}/pdf-url`);
+      if (res.ok) {
+        const { url } = await res.json();
+        setPdfUrl(url);
+        setPreviewOpen(true);
+      } else {
+        toast.error("Could not retrieve PDF for preview");
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
   if (coverId) {
     return (
       <div className="space-y-4">
@@ -83,7 +115,17 @@ export function CoverLetterPanel({
               150–200 words, tailored to the job description.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handlePreview}
+              disabled={previewLoading}
+              className="gap-1.5"
+            >
+              <Eye className="h-4 w-4" />
+              {previewLoading ? "Loading…" : "Preview"}
+            </Button>
             {pdfUrl ? (
               <Button asChild size="sm" variant="outline" className="gap-1.5" disabled={loading}>
                 <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
@@ -134,6 +176,22 @@ export function CoverLetterPanel({
             </>
           )}
         </Button>
+
+        {/* PDF Preview Dialog */}
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="max-w-4xl w-full">
+            <DialogHeader>
+              <DialogTitle>Cover Letter Preview</DialogTitle>
+            </DialogHeader>
+            {pdfUrl && (
+              <iframe
+                src={pdfUrl}
+                className="w-full h-[75vh] rounded border"
+                title="Cover Letter PDF Preview"
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }

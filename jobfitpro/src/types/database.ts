@@ -176,6 +176,8 @@ export type Database = {
           output_filename: string | null;
           status: OutputStatus;
           rewritten_content: Json | null;
+          share_token: string | null;
+          share_pin: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -188,6 +190,8 @@ export type Database = {
           output_filename?: string | null;
           status?: OutputStatus;
           rewritten_content?: Json | null;
+          share_token?: string | null;
+          share_pin?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -200,6 +204,8 @@ export type Database = {
           output_filename?: string | null;
           status?: OutputStatus;
           rewritten_content?: Json | null;
+          share_token?: string | null;
+          share_pin?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -339,6 +345,7 @@ export type Database = {
           gap_explanations: Json | null;
           threshold: number;
           passes_threshold: boolean;
+          is_pre_rewrite: boolean;
           created_at: string;
         };
         Insert: {
@@ -354,6 +361,7 @@ export type Database = {
           missing_keywords?: Json | null;
           gap_explanations?: Json | null;
           threshold?: number;
+          is_pre_rewrite?: boolean;
           created_at?: string;
         };
         // ats_scores is immutable — no client UPDATE policy in RLS

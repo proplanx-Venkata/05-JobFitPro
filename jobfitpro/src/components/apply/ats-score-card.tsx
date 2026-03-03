@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, RefreshCw } from "lucide-react";
+import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AtsScore {
@@ -24,6 +24,7 @@ interface AtsScore {
 interface AtsScoreCardProps {
   versionId: string;
   initialScore: AtsScore | null;
+  preRewriteScore: { overall_score: number; category: string } | null;
 }
 
 function categoryColor(cat: string) {
@@ -45,7 +46,7 @@ const componentLabels: Record<string, string> = {
   format_score: "Format",
 };
 
-export function AtsScoreCard({ versionId, initialScore }: AtsScoreCardProps) {
+export function AtsScoreCard({ versionId, initialScore, preRewriteScore }: AtsScoreCardProps) {
   const [score, setScore] = useState<AtsScore | null>(initialScore);
   const [loading, setLoading] = useState(false);
 
@@ -99,8 +100,34 @@ export function AtsScoreCard({ versionId, initialScore }: AtsScoreCardProps) {
     { key: "format_score", value: score.format_score },
   ];
 
+  const delta = preRewriteScore
+    ? score.overall_score - preRewriteScore.overall_score
+    : null;
+
   return (
     <div className="space-y-5">
+      {/* Before / After banner */}
+      {preRewriteScore && delta !== null && (
+        <div className="flex items-center gap-4 rounded-lg border bg-neutral-50 px-4 py-3 mb-2">
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">Before</p>
+            <p className={cn("text-2xl font-bold", scoreRingColor(preRewriteScore.overall_score))}>
+              {preRewriteScore.overall_score}
+            </p>
+          </div>
+          <span className="text-muted-foreground">→</span>
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">After</p>
+            <p className={cn("text-2xl font-bold", scoreRingColor(score.overall_score))}>
+              {score.overall_score}
+            </p>
+          </div>
+          <span className={cn("ml-auto font-semibold", delta >= 0 ? "text-green-600" : "text-red-500")}>
+            {delta >= 0 ? "+" : ""}{delta} pts
+          </span>
+        </div>
+      )}
+
       {/* Overall score */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="text-center">
@@ -149,13 +176,17 @@ export function AtsScoreCard({ versionId, initialScore }: AtsScoreCardProps) {
           </p>
           <div className="flex flex-wrap gap-1.5">
             {score.missing_keywords.map((kw) => (
-              <span
+              <a
                 key={kw}
-                className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs text-muted-foreground"
+                href={`https://www.google.com/search?q=${encodeURIComponent(kw + " tutorial")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-xs text-muted-foreground hover:text-primary hover:border-primary transition-colors"
                 title={score.gap_explanations?.[kw]}
               >
                 {kw}
-              </span>
+                <ExternalLink className="h-2.5 w-2.5 ml-0.5" />
+              </a>
             ))}
           </div>
         </div>
