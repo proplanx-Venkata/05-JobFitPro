@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WorkflowStepper, type WorkflowStep } from "@/components/apply/workflow-stepper";
+import { WorkflowStepper } from "@/components/apply/workflow-stepper";
+import { resolveStep, type WorkflowStep } from "@/lib/apply/resolve-step";
 import { GapList } from "@/components/apply/gap-list";
 import { InterviewChat } from "@/components/apply/interview-chat";
 import { RewritePanel } from "@/components/apply/rewrite-panel";
@@ -17,18 +18,6 @@ interface ApplyPageProps {
   params: Promise<{ id: string }>;
 }
 
-function resolveStep(
-  interviewStatus: string,
-  versionStatus: string,
-  hasCoverLetter: boolean
-): WorkflowStep {
-  if (interviewStatus === "pending") return "gap_analysis";
-  if (interviewStatus === "in_progress") return "interview";
-  if (versionStatus === "pending" || versionStatus === "error" || versionStatus === "generating")
-    return "rewrite";
-  if (versionStatus === "ready" && !hasCoverLetter) return "cover_letter";
-  return "ats_score";
-}
 
 export default async function ApplyPage({ params }: ApplyPageProps) {
   const { id } = await params;
