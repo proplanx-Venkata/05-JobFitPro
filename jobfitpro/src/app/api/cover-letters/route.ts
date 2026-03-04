@@ -125,13 +125,29 @@ export async function POST(request: NextRequest) {
   const approvedAnswers =
     (session?.approved_answers as Record<string, string> | null) ?? {};
 
+  const admin = createSupabaseAdminClient();
+
   // ── 6. Delete any previous cover letters for this version (regeneration) ──
   // Keeps one cover letter per version; prevents .single() breaking the apply page.
-  await supabase
+  const { data: oldCoverLetters } = await supabase
     .from("cover_letters")
-    .delete()
+    .select("id, output_storage_path")
     .eq("resume_version_id", resume_version_id)
     .eq("user_id", user.id);
+
+  if (oldCoverLetters && oldCoverLetters.length > 0) {
+    const pathsToRemove = oldCoverLetters
+      .map((cl) => cl.output_storage_path)
+      .filter((p): p is string => !!p);
+    if (pathsToRemove.length > 0) {
+      await admin.storage.from("outputs").remove(pathsToRemove);
+    }
+    await supabase
+      .from("cover_letters")
+      .delete()
+      .eq("resume_version_id", resume_version_id)
+      .eq("user_id", user.id);
+  }
 
   // ── 7. Insert cover_letter record (status: generating) ────────────────────
   const { data: clRecord, error: insertErr } = await supabase
@@ -203,7 +219,6 @@ export async function POST(request: NextRequest) {
     .slice(0, 40);
   const outputFilename = `cover_letter_${safeTitle}.pdf`;
   const storagePath = `${user.id}/${resume_version_id}/${outputFilename}`;
-  const admin = createSupabaseAdminClient();
 
   const { error: uploadErr } = await admin.storage
     .from("outputs")

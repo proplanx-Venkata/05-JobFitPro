@@ -84,8 +84,8 @@ export async function POST(request: NextRequest) {
     console.error("Profile upsert failed:", profileErr.message);
   }
 
-  return NextResponse.json<ApiResponse<{ email: string; password: string }>>(
-    { success: true, data: { email, password } },
+  return NextResponse.json<ApiResponse<{ email: string }>>(
+    { success: true, data: { email } },
     { status: 201 }
   );
 }

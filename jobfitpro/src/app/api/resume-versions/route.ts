@@ -270,7 +270,9 @@ export async function POST(request: NextRequest) {
         is_pre_rewrite: true,
       });
       logAiUsage({ userId: user.id, operation: "ats_score", inputTokens, outputTokens, model: "claude-haiku-4-5-20251001" });
-    } catch { /* silent — never break main request */ }
+    } catch (err) {
+      console.error(`[pre-rewrite ATS] version=${version.id}`, err instanceof Error ? err.message : err);
+    }
   })();
 
   // ── 9. Increment monthly_version_count (paid quota tracking) ────────────

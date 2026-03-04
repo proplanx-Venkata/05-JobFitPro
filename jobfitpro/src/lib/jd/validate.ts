@@ -86,6 +86,23 @@ export function validateUrl(raw: string): ValidationResult {
     if (url.protocol !== "http:" && url.protocol !== "https:") {
       return { valid: false, error: "URL must use http or https." };
     }
+    // Block SSRF: reject private / loopback / link-local addresses
+    const h = url.hostname.toLowerCase();
+    if (
+      h === "localhost" ||
+      h === "0.0.0.0" ||
+      h.endsWith(".local") ||
+      /^127\./.test(h) ||
+      /^10\./.test(h) ||
+      /^192\.168\./.test(h) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
+      /^169\.254\./.test(h) ||       // link-local / AWS metadata
+      h === "[::1]" ||               // IPv6 loopback
+      h.startsWith("fc") ||          // IPv6 ULA
+      h.startsWith("fd")
+    ) {
+      return { valid: false, error: "That URL is not accessible from the server." };
+    }
     return { valid: true };
   } catch {
     return { valid: false, error: "Invalid URL." };

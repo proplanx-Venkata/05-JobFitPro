@@ -190,6 +190,13 @@ export async function PATCH(
     );
   }
 
+  if (typeof body.notes === "string" && body.notes.length > 5000) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Notes must be under 5000 characters." },
+      { status: 400 }
+    );
+  }
+
   // Confirm ownership
   const { data: jd, error: fetchError } = await supabase
     .from("job_descriptions")
