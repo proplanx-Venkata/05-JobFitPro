@@ -14,8 +14,6 @@ export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = 3
 ): Promise<T> {
-  let lastError: unknown;
-
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
@@ -25,7 +23,6 @@ export async function withRetry<T>(
         (err instanceof Anthropic.APIError && err.status === 529);
 
       if (isRetryable && attempt < maxRetries) {
-        lastError = err;
         const baseDelay = 1000 * 2 ** attempt; // 1s, 2s, 4s
         const jitter = Math.random() * 400 - 200; // ±200ms
         const delay = Math.min(baseDelay + jitter, 10_000);
@@ -37,5 +34,6 @@ export async function withRetry<T>(
     }
   }
 
-  throw lastError;
+  // Unreachable: the loop always returns or throws. TypeScript needs this.
+  throw new Error("withRetry: exhausted retries");
 }

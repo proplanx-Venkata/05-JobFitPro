@@ -17,22 +17,22 @@ function makeRateLimiter(requests: number, windowSeconds: number) {
   });
 }
 
+const HOUR = 3600;
+
 // Per-user limits on AI-heavy routes (sliding window)
 const limiters = {
   // Resume upload triggers parse — 10/hour is generous
-  upload: makeRateLimiter(10, 3600),
+  upload: makeRateLimiter(10, HOUR),
   // JD ingest triggers Claude clean — 10/hour
-  jd: makeRateLimiter(10, 3600),
+  jd: makeRateLimiter(10, HOUR),
   // Rewrite is the most expensive call — 5/hour
-  rewrite: makeRateLimiter(5, 3600),
+  rewrite: makeRateLimiter(5, HOUR),
   // Cover letter — 5/hour
-  coverLetter: makeRateLimiter(5, 3600),
+  coverLetter: makeRateLimiter(5, HOUR),
   // Interview turn — 60/hour (20 per session, up to 3 sessions/hour)
-  interviewTurn: makeRateLimiter(60, 3600),
-  // ATS score — 10/hour
-  ats: makeRateLimiter(10, 3600),
+  interviewTurn: makeRateLimiter(60, HOUR),
   // Interview prep — 5/hour
-  interviewPrep: makeRateLimiter(5, 3600),
+  interviewPrep: makeRateLimiter(5, HOUR),
 } as const;
 
 export type RateLimitKey = keyof typeof limiters;
