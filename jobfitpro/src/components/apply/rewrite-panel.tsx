@@ -37,9 +37,14 @@ export function RewritePanel({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
 
-  // Share
+  // Share — store the full share URL in state to avoid window.location.origin in SSR
   const [shareToken, setShareToken] = useState<string | null>(initialShareToken);
   const [sharePin, setSharePin] = useState<string | null>(initialSharePin);
+  const [shareUrl, setShareUrl] = useState<string | null>(
+    initialShareToken
+      ? `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/share/${initialShareToken}`
+      : null
+  );
   const [pinInput, setPinInput] = useState("");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
@@ -112,9 +117,9 @@ export function RewritePanel({
         toast.error(data.error ?? "Failed to create share link");
         return;
       }
-      const token = data.data.shareUrl.split("/share/")[1];
-      setShareToken(token);
+      setShareToken(data.data.shareUrl.split("/share/")[1]);
       setSharePin(pinInput);
+      setShareUrl(data.data.shareUrl);
       setPinInput("");
       toast.success("Share link created!");
     } catch {
@@ -123,10 +128,6 @@ export function RewritePanel({
       setShareLoading(false);
     }
   }
-
-  const shareUrl = shareToken
-    ? `${window.location.origin}/share/${shareToken}`
-    : null;
 
   if (status === "ready" || initialPdfPath) {
     return (

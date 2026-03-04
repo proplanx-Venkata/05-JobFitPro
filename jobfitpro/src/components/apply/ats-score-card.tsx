@@ -48,6 +48,7 @@ const componentLabels: Record<string, string> = {
 
 export function AtsScoreCard({ versionId, initialScore, preRewriteScore }: AtsScoreCardProps) {
   const [score, setScore] = useState<AtsScore | null>(initialScore);
+  const [preScore, setPreScore] = useState<{ overall_score: number; category: string } | null>(preRewriteScore);
   const [loading, setLoading] = useState(false);
 
   async function handleScore() {
@@ -65,6 +66,19 @@ export function AtsScoreCard({ versionId, initialScore, preRewriteScore }: AtsSc
       }
       setScore(data.data ?? data);
       toast.success("ATS score calculated!");
+
+      // If pre-rewrite score wasn't available at page load (fire-and-forget may
+      // not have finished yet), try fetching it now — it's likely done by the
+      // time the user reaches the ATS step.
+      if (!preScore) {
+        try {
+          const preRes = await fetch(`/api/ats-scores?resume_version_id=${versionId}`);
+          if (preRes.ok) {
+            const preData = await preRes.json();
+            if (preData.success && preData.data) setPreScore(preData.data);
+          }
+        } catch { /* silent — banner just won't show */ }
+      }
     } catch {
       toast.error("Network error. Please try again.");
     } finally {
@@ -100,19 +114,19 @@ export function AtsScoreCard({ versionId, initialScore, preRewriteScore }: AtsSc
     { key: "format_score", value: score.format_score },
   ];
 
-  const delta = preRewriteScore
-    ? score.overall_score - preRewriteScore.overall_score
+  const delta = preScore
+    ? score.overall_score - preScore.overall_score
     : null;
 
   return (
     <div className="space-y-5">
       {/* Before / After banner */}
-      {preRewriteScore && delta !== null && (
+      {preScore && delta !== null && (
         <div className="flex items-center gap-4 rounded-lg border bg-neutral-50 px-4 py-3 mb-2">
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Before</p>
-            <p className={cn("text-2xl font-bold", scoreRingColor(preRewriteScore.overall_score))}>
-              {preRewriteScore.overall_score}
+            <p className={cn("text-2xl font-bold", scoreRingColor(preScore.overall_score))}>
+              {preScore.overall_score}
             </p>
           </div>
           <span className="text-muted-foreground">→</span>

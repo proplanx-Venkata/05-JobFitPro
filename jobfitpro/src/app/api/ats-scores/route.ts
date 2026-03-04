@@ -13,6 +13,46 @@ type AtsScoreRow = Database["public"]["Tables"]["ats_scores"]["Row"];
 export const maxDuration = 30;
 
 // ---------------------------------------------------------------------------
+// GET /api/ats-scores?resume_version_id=X
+// Returns the pre-rewrite ATS score (is_pre_rewrite=true) for a given version.
+// Used by the client to fetch the pre-rewrite score after manually scoring.
+// ---------------------------------------------------------------------------
+export async function GET(request: NextRequest) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  const versionId = request.nextUrl.searchParams.get("resume_version_id");
+  if (!versionId) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "resume_version_id is required." },
+      { status: 400 }
+    );
+  }
+
+  const { data } = await supabase
+    .from("ats_scores")
+    .select("overall_score, category")
+    .eq("resume_version_id", versionId)
+    .eq("user_id", user.id)
+    .eq("is_pre_rewrite", true)
+    .limit(1)
+    .single();
+
+  return NextResponse.json<ApiResponse<{ overall_score: number; category: string } | null>>({
+    success: true,
+    data: data ?? null,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // POST /api/ats-scores
 // Scores the rewritten resume against its JD and inserts an immutable record.
 //

@@ -29,20 +29,23 @@ export function WorkflowStepper({ currentStep }: WorkflowStepperProps) {
       {STEPS.map((step, i) => {
         const isCompleted = i < currentIndex;
         const isCurrent = i === currentIndex;
+        // Terminal step is considered done, not "in-progress"
+        const isTerminalCurrent = isCurrent && i === STEPS.length - 1;
+        const isDone = isCompleted || isTerminalCurrent;
 
         return (
           <div key={step.id} className="flex items-center">
             <div
               className={cn(
                 "flex flex-col items-center gap-1",
-                isCompleted
+                isDone
                   ? "text-primary"
                   : isCurrent
                   ? "text-foreground"
                   : "text-muted-foreground"
               )}
             >
-              {isCompleted ? (
+              {isDone ? (
                 <CheckCircle className="h-5 w-5" />
               ) : isCurrent ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -57,7 +60,7 @@ export function WorkflowStepper({ currentStep }: WorkflowStepperProps) {
               <div
                 className={cn(
                   "h-px w-12 mx-2 mb-4",
-                  i < currentIndex ? "bg-primary" : "bg-border"
+                  isDone ? "bg-primary" : "bg-border"
                 )}
               />
             )}

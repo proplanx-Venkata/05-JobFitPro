@@ -70,17 +70,29 @@ export async function POST(
 
   if (token) {
     // Update only the PIN (keep existing token)
-    await adminClient
+    const { error: pinErr } = await adminClient
       .from("resume_versions")
       .update({ share_pin: pin })
       .eq("id", id);
+    if (pinErr) {
+      return NextResponse.json<ApiResponse<never>>(
+        { success: false, error: "Failed to update share PIN." },
+        { status: 500 }
+      );
+    }
   } else {
     // Generate new token
     token = crypto.randomUUID();
-    await adminClient
+    const { error: createErr } = await adminClient
       .from("resume_versions")
       .update({ share_token: token, share_pin: pin })
       .eq("id", id);
+    if (createErr) {
+      return NextResponse.json<ApiResponse<never>>(
+        { success: false, error: "Failed to create share link." },
+        { status: 500 }
+      );
+    }
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";

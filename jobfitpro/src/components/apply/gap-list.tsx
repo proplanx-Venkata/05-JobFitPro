@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
 import type { Gap } from "@/types/gap";
@@ -40,7 +42,7 @@ export function GapList({ gaps }: GapListProps) {
               href={`https://www.google.com/search?q=${encodeURIComponent(gap.keyword + " tutorial")}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-0.5 text-xs text-primary hover:underline mt-1"
+              className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline mt-1.5"
             >
               Learn <ExternalLink className="h-3 w-3" />
             </a>
