@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:types": "supabase gen types typescript --project-id YOUR_PROJECT_REF --schema public > src/types/database.ts",
     "db:migrate": "supabase db push"
   },
@@ -48,6 +50,7 @@
     "supabase": "^2.76.15",
     "tailwindcss": "^3.4.19",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }
