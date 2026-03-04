@@ -1,6 +1,7 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserTierButton } from "@/components/admin/user-tier-button";
+import { CreateUserDialog } from "@/components/admin/create-user-dialog";
 
 interface AdminUser {
   id: string;
@@ -32,11 +33,14 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Users</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          {users.length} registered user{users.length !== 1 ? "s" : ""}.
-        </p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Users</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {users.length} registered user{users.length !== 1 ? "s" : ""}.
+          </p>
+        </div>
+        <CreateUserDialog />
       </div>
 
       <Card>

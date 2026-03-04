@@ -41,7 +41,7 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
   const { data: version } = await supabase
     .from("resume_versions")
     .select(
-      "id, status, output_storage_path, job_description_id, share_token, share_pin, interview_sessions(id, status, identified_gaps, conversation_transcript, question_count)"
+      "id, status, output_storage_path, job_description_id, share_token, share_pin, interview_sessions(id, status, identified_gaps, conversation_transcript, question_count, approved_answers)"
     )
     .eq("id", id)
     .eq("user_id", user!.id)
@@ -142,6 +142,7 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
               sessionId={session.id}
               initialStatus={session.status}
               initialTranscript={transcript as { role: "assistant" | "user"; content: string }[]}
+              initialApprovedAnswers={(session.approved_answers as Record<string, string> | null) ?? undefined}
             />
           </CardContent>
         </Card>

@@ -6,13 +6,15 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Eye, FileDown, Loader2, RefreshCw } from "lucide-react";
+import { Eye, FileDown, Loader2, Pencil, RefreshCw, X } from "lucide-react";
+import type { CoverLetterContent } from "@/types/cover-letter";
 
 interface CoverLetterPanelProps {
   versionId: string;
@@ -32,6 +34,11 @@ export function CoverLetterPanel({
   // PDF preview
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Edit mode
+  const [editMode, setEditMode] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editContent, setEditContent] = useState<CoverLetterContent | null>(null);
 
   async function handleGenerate() {
     setLoading(true);
@@ -103,6 +110,149 @@ export function CoverLetterPanel({
     }
   }
 
+  async function handleEditClick() {
+    if (!coverId) return;
+    setEditLoading(true);
+    try {
+      const res = await fetch(`/api/cover-letters/${coverId}`);
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to load cover letter");
+        return;
+      }
+      const content = data.data?.generated_content as CoverLetterContent | null;
+      if (!content) {
+        toast.error("Cover letter content not available");
+        return;
+      }
+      setEditContent(content);
+      setEditMode(true);
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setEditLoading(false);
+    }
+  }
+
+  async function handleSave() {
+    if (!coverId || !editContent) return;
+    setEditLoading(true);
+    try {
+      const res = await fetch(`/api/cover-letters/${coverId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ generated_content: editContent }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to save cover letter");
+        return;
+      }
+      setPdfUrl(null); // clear cached URL so preview reloads updated PDF
+      setEditMode(false);
+      toast.success("Cover letter saved and PDF updated!");
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setEditLoading(false);
+    }
+  }
+
+  function updateParagraph(index: number, value: string) {
+    if (!editContent) return;
+    const paragraphs = [...editContent.paragraphs] as [string, string, string];
+    paragraphs[index] = value;
+    setEditContent({ ...editContent, paragraphs });
+  }
+
+  if (coverId && editMode && editContent) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Edit cover letter</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditMode(false)}
+            className="gap-1.5 text-muted-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+            Cancel
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Greeting</Label>
+            <Input
+              value={editContent.greeting}
+              onChange={(e) => setEditContent({ ...editContent, greeting: e.target.value })}
+              placeholder="Dear Hiring Manager,"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Opening paragraph</Label>
+            <Textarea
+              value={editContent.paragraphs[0]}
+              onChange={(e) => updateParagraph(0, e.target.value)}
+              className="resize-none min-h-[80px]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Body paragraph</Label>
+            <Textarea
+              value={editContent.paragraphs[1]}
+              onChange={(e) => updateParagraph(1, e.target.value)}
+              className="resize-none min-h-[80px]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Closing paragraph</Label>
+            <Textarea
+              value={editContent.paragraphs[2]}
+              onChange={(e) => updateParagraph(2, e.target.value)}
+              className="resize-none min-h-[80px]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Closing</Label>
+            <Input
+              value={editContent.closing}
+              onChange={(e) => setEditContent({ ...editContent, closing: e.target.value })}
+              placeholder="Sincerely,"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-muted-foreground">Candidate name (read-only)</Label>
+            <p className="text-sm px-3 py-2 border rounded-md bg-neutral-50 text-muted-foreground">
+              {editContent.candidate_name}
+            </p>
+          </div>
+        </div>
+
+        <Button
+          onClick={handleSave}
+          disabled={editLoading}
+          className="gap-2"
+        >
+          {editLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Saving…
+            </>
+          ) : (
+            "Save & Regenerate PDF"
+          )}
+        </Button>
+      </div>
+    );
+  }
+
   if (coverId) {
     return (
       <div className="space-y-4">
@@ -125,6 +275,16 @@ export function CoverLetterPanel({
             >
               <Eye className="h-4 w-4" />
               {previewLoading ? "Loading…" : "Preview"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleEditClick}
+              disabled={editLoading}
+              className="gap-1.5"
+            >
+              <Pencil className="h-4 w-4" />
+              {editLoading ? "Loading…" : "Edit"}
             </Button>
             {pdfUrl ? (
               <Button asChild size="sm" variant="outline" className="gap-1.5" disabled={loading}>
