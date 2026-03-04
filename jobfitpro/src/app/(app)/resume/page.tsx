@@ -1,9 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResumeUpload } from "@/components/resume/resume-upload";
-import { ResumePreview } from "@/components/resume/resume-preview";
-import { UploadCloud } from "lucide-react";
-import type { ParsedResume } from "@/types/resume";
+import { ResumeCard } from "@/components/resume/resume-card";
+import { UploadCloud, AlertTriangle } from "lucide-react";
 
 export default async function ResumePage() {
   const supabase = await createSupabaseServerClient();
@@ -11,50 +10,30 @@ export default async function ResumePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: resume } = await supabase
+  const { data: resumes } = await supabase
     .from("resumes")
-    .select("id, original_filename, status, created_at, parsed_content")
+    .select(
+      "id, original_filename, label, status, page_count, file_size_bytes, is_active, is_promoted, created_at"
+    )
     .eq("user_id", user!.id)
-    .eq("is_active", true)
-    .single();
+    .eq("is_archived", false)
+    .order("created_at", { ascending: false });
+
+  const count = resumes?.length ?? 0;
+  const canUpload = count < 3;
 
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">My Resume</h2>
+        <h2 className="text-2xl font-bold">My Resumes</h2>
         <p className="text-muted-foreground text-sm mt-1">
-          Upload your master resume once — it&apos;s the foundation for all
-          job-specific versions.
+          Store up to 3 resumes. The active resume is used for all new job analyses.
         </p>
       </div>
 
-      {resume ? (
+      {count === 0 ? (
         <>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Parsed content</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResumePreview
-                resume={{
-                  ...resume,
-                  parsed_content: resume.parsed_content as unknown as ParsedResume,
-                }}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Replace resume</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResumeUpload />
-            </CardContent>
-          </Card>
-        </>
-      ) : (
-        <>
+          {/* Empty state */}
           <div className="rounded-xl border border-dashed border-border bg-neutral-50 p-8 text-center space-y-4">
             <div className="flex justify-center">
               <div className="rounded-full bg-primary/10 p-4">
@@ -91,6 +70,37 @@ export default async function ResumePage() {
               <ResumeUpload />
             </CardContent>
           </Card>
+        </>
+      ) : (
+        <>
+          {/* Resume cards */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {(resumes ?? []).map((resume) => (
+              <ResumeCard key={resume.id} resume={resume} />
+            ))}
+          </div>
+
+          {/* Upload section */}
+          {canUpload ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Upload another resume</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResumeUpload />
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">Resume limit reached</p>
+                <p className="text-sm text-amber-700 mt-0.5">
+                  You have 3 resumes stored. Archive one to upload another.
+                </p>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

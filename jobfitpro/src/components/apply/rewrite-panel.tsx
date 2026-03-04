@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Eye, FileDown, Loader2, RefreshCw, Share2 } from "lucide-react";
+import { Eye, FileDown, Loader2, RefreshCw, Share2, TrendingUp } from "lucide-react";
 
 interface RewritePanelProps {
   versionId: string;
@@ -48,6 +48,12 @@ export function RewritePanel({
   const [pinInput, setPinInput] = useState("");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
+
+  // Promote to resume
+  const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
+  const [promoteLabel, setPromoteLabel] = useState("");
+  const [promoteLoading, setPromoteLoading] = useState(false);
+  const [promoted, setPromoted] = useState(false);
 
   async function handleRewrite() {
     setLoading(true);
@@ -129,6 +135,29 @@ export function RewritePanel({
     }
   }
 
+  async function handlePromote() {
+    setPromoteLoading(true);
+    try {
+      const res = await fetch(`/api/resume-versions/${versionId}/promote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: promoteLabel.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Promote failed");
+        return;
+      }
+      setPromoted(true);
+      setPromoteDialogOpen(false);
+      toast.success("Promoted! Go to My Resumes to set it as active.");
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setPromoteLoading(false);
+    }
+  }
+
   if (status === "ready" || initialPdfPath) {
     return (
       <div className="space-y-4">
@@ -181,6 +210,16 @@ export function RewritePanel({
               <Share2 className="h-4 w-4" />
               {shareToken ? "Share Link" : "Share"}
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPromoteDialogOpen(true)}
+              disabled={promoted}
+              className="gap-1.5"
+            >
+              <TrendingUp className="h-4 w-4" />
+              {promoted ? "Promoted" : "Promote to Resume"}
+            </Button>
           </div>
         </div>
         <Button
@@ -202,6 +241,45 @@ export function RewritePanel({
             </>
           )}
         </Button>
+
+        {/* Promote Dialog */}
+        <Dialog open={promoteDialogOpen} onOpenChange={setPromoteDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Promote to base resume</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                This rewritten resume will be saved as a new base resume. You can then set it as
+                active to use it for future analyses.
+              </p>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Label (optional)
+                </p>
+                <Input
+                  value={promoteLabel}
+                  onChange={(e) => setPromoteLabel(e.target.value.slice(0, 80))}
+                  placeholder="e.g. Senior Engineer version"
+                />
+              </div>
+              <Button
+                onClick={handlePromote}
+                disabled={promoteLoading}
+                className="w-full gap-2"
+              >
+                {promoteLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Promoting…
+                  </>
+                ) : (
+                  "Promote"
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* PDF Preview Dialog */}
         <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, Calendar, ExternalLink } from "lucide-react";
 import { StartAnalysisButton } from "@/components/jd/start-analysis-button";
 import { DeleteJdButton } from "@/components/jd/delete-jd-button";
+import { JdTracker } from "@/components/jd/jd-tracker";
 
 interface JdDetailPageProps {
   params: Promise<{ id: string }>;
@@ -24,7 +25,7 @@ export default async function JdDetailPage({ params }: JdDetailPageProps) {
 
   const { data: jd } = await supabase
     .from("job_descriptions")
-    .select("id, title, company, source_url, cleaned_text, created_at")
+    .select("id, title, company, source_url, cleaned_text, created_at, application_status, notes, applied_at")
     .eq("id", id)
     .eq("user_id", user!.id)
     .single();
@@ -84,6 +85,21 @@ export default async function JdDetailPage({ params }: JdDetailPageProps) {
           )}
         </div>
       </div>
+
+      {/* Application Tracker */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Application Tracker</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <JdTracker
+            jdId={jd.id}
+            initialStatus={jd.application_status ?? "saved"}
+            initialNotes={jd.notes ?? null}
+            initialAppliedAt={jd.applied_at ?? null}
+          />
+        </CardContent>
+      </Card>
 
       {/* CTA */}
       <Card className="border-primary/20 bg-primary/5">

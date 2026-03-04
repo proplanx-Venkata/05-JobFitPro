@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { HistoryEntry } from "@/types/history";
+import type { JdApplicationStatus } from "@/types/database";
 
 function statusBadge(status: string) {
   const map: Record<string, string> = {
@@ -23,6 +23,26 @@ function atsCategory(category: string) {
   if (category === "Strong") return "text-blue-700";
   return "text-red-600";
 }
+
+const APP_STATUS_STYLES: Record<JdApplicationStatus, string> = {
+  saved: "bg-neutral-100 text-neutral-500",
+  applied: "bg-blue-100 text-blue-700",
+  phone_screen: "bg-purple-100 text-purple-700",
+  interview: "bg-yellow-100 text-yellow-700",
+  offer: "bg-green-100 text-green-700",
+  rejected: "bg-red-100 text-red-600",
+  withdrawn: "bg-neutral-100 text-neutral-400",
+};
+
+const APP_STATUS_LABELS: Record<JdApplicationStatus, string> = {
+  saved: "Saved",
+  applied: "Applied",
+  phone_screen: "Phone Screen",
+  interview: "Interview",
+  offer: "Offer",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
+};
 
 interface HistoryRowProps {
   entry: HistoryEntry;
@@ -49,6 +69,18 @@ export function HistoryRow({ entry }: HistoryRowProps) {
       {/* Date */}
       <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
         {date}
+      </td>
+
+      {/* Application status */}
+      <td className="py-3 px-4">
+        <span
+          className={cn(
+            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+            APP_STATUS_STYLES[jd.application_status]
+          )}
+        >
+          {APP_STATUS_LABELS[jd.application_status]}
+        </span>
       </td>
 
       {/* Interview status */}

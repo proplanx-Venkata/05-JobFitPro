@@ -29,6 +29,15 @@ export type InterviewStatus =
   | "in_progress"
   | "completed"
   | "aborted";
+export type JdIngestionStatus = "processing" | "ready" | "error";
+export type JdApplicationStatus =
+  | "saved"
+  | "applied"
+  | "phone_screen"
+  | "interview"
+  | "offer"
+  | "rejected"
+  | "withdrawn";
 
 export type Database = {
   public: {
@@ -80,6 +89,11 @@ export type Database = {
           parsed_at: string | null;
           is_active: boolean;
           replaced_at: string | null;
+          label: string | null;
+          is_archived: boolean;
+          archived_at: string | null;
+          is_promoted: boolean;
+          promoted_from_version_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -96,6 +110,11 @@ export type Database = {
           parsed_at?: string | null;
           is_active?: boolean;
           replaced_at?: string | null;
+          label?: string | null;
+          is_archived?: boolean;
+          archived_at?: string | null;
+          is_promoted?: boolean;
+          promoted_from_version_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -112,7 +131,11 @@ export type Database = {
           parsed_at?: string | null;
           is_active?: boolean;
           replaced_at?: string | null;
-          created_at?: string;
+          label?: string | null;
+          is_archived?: boolean;
+          archived_at?: string | null;
+          is_promoted?: boolean;
+          promoted_from_version_id?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -131,6 +154,10 @@ export type Database = {
           cleaned_text: string | null;
           page_count: number | null;
           text_size_bytes: number | null;
+          status: JdIngestionStatus;
+          application_status: JdApplicationStatus;
+          notes: string | null;
+          applied_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -146,6 +173,10 @@ export type Database = {
           cleaned_text?: string | null;
           page_count?: number | null;
           text_size_bytes?: number | null;
+          status?: JdIngestionStatus;
+          application_status?: JdApplicationStatus;
+          notes?: string | null;
+          applied_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -161,6 +192,10 @@ export type Database = {
           cleaned_text?: string | null;
           page_count?: number | null;
           text_size_bytes?: number | null;
+          status?: JdIngestionStatus;
+          application_status?: JdApplicationStatus;
+          notes?: string | null;
+          applied_at?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -392,6 +427,7 @@ export type Database = {
       output_status: OutputStatus;
       ats_category: AtsCategory;
       interview_status: InterviewStatus;
+      jd_application_status: JdApplicationStatus;
     };
 
     CompositeTypes: {

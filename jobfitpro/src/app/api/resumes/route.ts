@@ -37,7 +37,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // ── 1. Parse multipart form ──────────────────────────────────────────────
+  // ── 1. Check resume capacity (max 3 non-archived) ───────────────────────
+  const { count: resumeCount } = await supabase
+    .from("resumes")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("is_archived", false);
+
+  if ((resumeCount ?? 0) >= 3) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Archive one resume before uploading another (maximum 3)." },
+      { status: 403 }
+    );
+  }
+
+  // ── 2. Parse multipart form ──────────────────────────────────────────────
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -108,14 +122,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // ── 5. Soft-delete existing active resume ────────────────────────────────
+  // ── 5. Deactivate all other non-archived resumes ─────────────────────────
   await supabase
     .from("resumes")
-    .update({ is_active: false, replaced_at: new Date().toISOString() })
+    .update({ is_active: false })
     .eq("user_id", user.id)
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .eq("is_archived", false);
 
   // ── 6. Insert resume record (status = uploading) ─────────────────────────
+  const label = (formData.get("label") as string | null)?.trim().slice(0, 80) || null;
+
   const { data: record, error: insertError } = await supabase
     .from("resumes")
     .insert({
@@ -126,6 +143,8 @@ export async function POST(request: NextRequest) {
       mime_type: file.type,
       page_count: extracted.pageCount,
       status: "uploading",
+      label,
+      is_active: true,
     })
     .select()
     .single();
@@ -224,9 +243,10 @@ export async function GET() {
   const { data, error } = await supabase
     .from("resumes")
     .select(
-      "id, original_filename, file_size_bytes, mime_type, page_count, status, parsed_at, is_active, replaced_at, created_at, updated_at"
+      "id, original_filename, file_size_bytes, mime_type, page_count, status, parsed_at, is_active, replaced_at, label, is_archived, archived_at, is_promoted, promoted_from_version_id, created_at, updated_at"
     )
     .eq("user_id", user.id)
+    .eq("is_archived", false)
     .order("created_at", { ascending: false });
 
   if (error) {

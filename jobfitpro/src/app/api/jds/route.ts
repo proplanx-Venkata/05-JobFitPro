@@ -210,32 +210,17 @@ async function ingestJd(params: {
     buffer,
   } = params;
 
-  // ── 3. Clean with Claude ─────────────────────────────────────────────────
-  let cleaned: { title: string | null; company: string | null; cleaned_text: string };
-  try {
-    const { data, inputTokens, outputTokens } = await cleanJdWithClaude(rawText);
-    cleaned = data;
-    logAiUsage({ userId, operation: "jd_clean", inputTokens, outputTokens, model: "claude-haiku-4-5-20251001" });
-  } catch {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "AI cleanup failed. Please try again." },
-      { status: 500 }
-    );
-  }
-
-  // ── 4. Insert JD record ──────────────────────────────────────────────────
+  // ── 3. Insert JD record immediately with processing status ───────────────
   const { data: record, error: insertError } = await supabase
     .from("job_descriptions")
     .insert({
       user_id: userId,
-      title: cleaned.title,
-      company: cleaned.company,
       source_type: sourceType,
       source_url: sourceUrl ?? null,
       raw_text: rawText,
-      cleaned_text: cleaned.cleaned_text,
       page_count: pageCount,
       text_size_bytes: textSizeBytes,
+      status: "processing",
     })
     .select()
     .single();
@@ -247,7 +232,40 @@ async function ingestJd(params: {
     );
   }
 
-  // ── 5. Upload file to storage (file sources only) ────────────────────────
+  // ── 4. Clean with Claude ─────────────────────────────────────────────────
+  let cleaned: { title: string | null; company: string | null; cleaned_text: string };
+  try {
+    const { data, inputTokens, outputTokens } = await cleanJdWithClaude(rawText);
+    cleaned = data;
+    logAiUsage({ userId, operation: "jd_clean", inputTokens, outputTokens, model: "claude-haiku-4-5-20251001" });
+  } catch {
+    await supabase
+      .from("job_descriptions")
+      .update({ status: "error" })
+      .eq("id", record.id);
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "AI cleanup failed. Please try again." },
+      { status: 500 }
+    );
+  }
+
+  // ── 5. Update record with cleaned content ─────────────────────────────────
+  await supabase
+    .from("job_descriptions")
+    .update({
+      title: cleaned.title,
+      company: cleaned.company,
+      cleaned_text: cleaned.cleaned_text,
+      status: "ready",
+    })
+    .eq("id", record.id);
+
+  record.title = cleaned.title;
+  record.company = cleaned.company;
+  record.cleaned_text = cleaned.cleaned_text;
+  record.status = "ready";
+
+  // ── 6. Upload file to storage (file sources only) ────────────────────────
   if (file && buffer) {
     const storagePath = `${userId}/${record.id}/${file.name}`;
     const admin = createSupabaseAdminClient();
@@ -299,7 +317,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("job_descriptions")
     .select(
-      "id, user_id, title, company, source_type, storage_path, source_url, page_count, text_size_bytes, created_at, updated_at"
+      "id, user_id, title, company, source_type, storage_path, source_url, page_count, text_size_bytes, status, application_status, notes, applied_at, created_at, updated_at"
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });

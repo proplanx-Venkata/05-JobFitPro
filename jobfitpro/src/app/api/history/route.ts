@@ -51,7 +51,7 @@ export async function GET() {
   const [jdsResult, interviewsResult, atsResult, clResult] = await Promise.all([
     supabase
       .from("job_descriptions")
-      .select("id, title, company, source_type")
+      .select("id, title, company, source_type, application_status")
       .in("id", jdIds),
 
     supabase
@@ -114,6 +114,7 @@ export async function GET() {
         title: jd?.title ?? null,
         company: jd?.company ?? null,
         source_type: jd?.source_type ?? "url",
+        application_status: jd?.application_status ?? "saved",
       },
       interview: interview
         ? {

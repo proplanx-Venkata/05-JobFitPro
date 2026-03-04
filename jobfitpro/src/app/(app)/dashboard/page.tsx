@@ -31,7 +31,7 @@ export default async function DashboardPage() {
     const [jdsRes, interviewsRes, atsRes, clRes] = await Promise.all([
       supabase
         .from("job_descriptions")
-        .select("id, title, company, source_type")
+        .select("id, title, company, source_type, application_status")
         .in("id", jdIds),
       supabase
         .from("interview_sessions")
@@ -84,6 +84,7 @@ export default async function DashboardPage() {
           title: jd.title,
           company: jd.company,
           source_type: jd.source_type,
+          application_status: jd.application_status ?? "saved",
         },
         interview: interviewMap[v.id] ?? null,
         latest_ats_score: atsMap[v.id] ?? null,
@@ -162,6 +163,7 @@ export default async function DashboardPage() {
               <tr className="text-xs text-muted-foreground border-b bg-neutral-50">
                 <th className="text-left py-2 px-4 font-medium">Role</th>
                 <th className="text-left py-2 px-4 font-medium">Date</th>
+                <th className="text-left py-2 px-4 font-medium">Status</th>
                 <th className="text-left py-2 px-4 font-medium">Interview</th>
                 <th className="text-left py-2 px-4 font-medium">Resume</th>
                 <th className="text-left py-2 px-4 font-medium">ATS</th>

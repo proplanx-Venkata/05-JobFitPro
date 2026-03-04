@@ -12,7 +12,7 @@ export default async function JdsPage() {
 
   const { data: jds } = await supabase
     .from("job_descriptions")
-    .select("id, title, company, source_url, created_at")
+    .select("id, title, company, source_url, created_at, status, application_status")
     .eq("user_id", user!.id)
     .order("created_at", { ascending: false });
 

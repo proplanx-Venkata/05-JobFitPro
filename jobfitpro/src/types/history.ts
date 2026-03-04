@@ -3,6 +3,7 @@ import type {
   InterviewStatus,
   AtsCategory,
   JdSourceType,
+  JdApplicationStatus,
 } from "@/types/database";
 
 /**
@@ -23,6 +24,7 @@ export interface HistoryEntry {
     title: string | null;
     company: string | null;
     source_type: JdSourceType;
+    application_status: JdApplicationStatus;
   };
   interview: {
     id: string;

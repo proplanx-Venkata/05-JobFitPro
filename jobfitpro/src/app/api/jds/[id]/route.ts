@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { ApiResponse } from "@/types/api";
-import type { Database } from "@/types/database";
+import type { Database, JdApplicationStatus } from "@/types/database";
 
 type JdRow = Database["public"]["Tables"]["job_descriptions"]["Row"];
+
+const ALLOWED_APP_STATUSES: JdApplicationStatus[] = [
+  "saved", "applied", "phone_screen", "interview", "offer", "rejected", "withdrawn",
+];
 
 // ---------------------------------------------------------------------------
 // GET /api/jds/[id]
@@ -134,5 +138,96 @@ export async function DELETE(
   return NextResponse.json<ApiResponse<{ deleted: true }>>({
     success: true,
     data: { deleted: true },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// PATCH /api/jds/[id]
+// Update application pipeline status, notes, or applied_at.
+// Body: { application_status?, notes?, applied_at? }
+// ---------------------------------------------------------------------------
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  let body: {
+    application_status?: JdApplicationStatus;
+    notes?: string | null;
+    applied_at?: string | null;
+  };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Invalid JSON body." },
+      { status: 400 }
+    );
+  }
+
+  if (!body.application_status && body.notes === undefined && body.applied_at === undefined) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "At least one field is required." },
+      { status: 400 }
+    );
+  }
+
+  if (body.application_status && !ALLOWED_APP_STATUSES.includes(body.application_status)) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Invalid application_status value." },
+      { status: 400 }
+    );
+  }
+
+  // Confirm ownership
+  const { data: jd, error: fetchError } = await supabase
+    .from("job_descriptions")
+    .select("id")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (fetchError || !jd) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Job description not found." },
+      { status: 404 }
+    );
+  }
+
+  const updates: Record<string, unknown> = {};
+  if (body.application_status) updates.application_status = body.application_status;
+  if (body.notes !== undefined) updates.notes = body.notes;
+  if (body.applied_at !== undefined) updates.applied_at = body.applied_at;
+
+  const { data: updated, error: updateError } = await supabase
+    .from("job_descriptions")
+    .update(updates)
+    .eq("id", id)
+    .select(
+      "id, user_id, title, company, source_type, storage_path, source_url, page_count, text_size_bytes, status, application_status, notes, applied_at, created_at, updated_at"
+    )
+    .single();
+
+  if (updateError || !updated) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Failed to update job description." },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json<ApiResponse<Omit<JdRow, "raw_text" | "cleaned_text">>>({
+    success: true,
+    data: updated as Omit<JdRow, "raw_text" | "cleaned_text">,
   });
 }
