@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { extractJdText } from "@/lib/jd/extract-text";
 import {
   validateJdMimeType,
@@ -41,6 +42,9 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
   }
+
+  const rateLimitError = await checkRateLimit(user.id, "jd");
+  if (rateLimitError) return rateLimitError;
 
   // ── 1. Parse multipart form ──────────────────────────────────────────────
   let formData: FormData;

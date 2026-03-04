@@ -1,8 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedResume } from "@/types/resume";
 import type { GapAnalysisResult } from "@/types/gap";
-
-const client = new Anthropic();
+import { anthropic, withRetry } from "@/lib/ai/claude-client";
 
 const SYSTEM_PROMPT = `\
 You are a precise ATS gap analyzer. Compare a structured resume against a job description \
@@ -63,20 +61,22 @@ export async function analyzeGapsWithClaude(
 ): Promise<{ data: GapAnalysisResult; inputTokens: number; outputTokens: number }> {
   const resumeJson = JSON.stringify(parsedResume, null, 2);
 
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: USER_PROMPT_TEMPLATE.replace("{{RESUME_JSON}}", resumeJson).replace(
-          "{{JD_TEXT}}",
-          jdCleanedText
-        ),
-      },
-    ],
-  });
+  const message = await withRetry(() =>
+    anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 2048,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: USER_PROMPT_TEMPLATE.replace("{{RESUME_JSON}}", resumeJson).replace(
+            "{{JD_TEXT}}",
+            jdCleanedText
+          ),
+        },
+      ],
+    })
+  );
 
   const block = message.content[0];
   if (block.type !== "text") {

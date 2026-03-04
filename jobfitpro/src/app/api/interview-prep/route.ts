@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateInterviewPrepWithClaude } from "@/lib/interview-prep/generate-with-claude";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { logAiUsage } from "@/lib/ai/log-usage";
 import type { ApiResponse } from "@/types/api";
 import type { ParsedResume } from "@/types/resume";
@@ -25,6 +26,9 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
   }
+
+  const rateLimitError = await checkRateLimit(user.id, "interviewPrep");
+  if (rateLimitError) return rateLimitError;
 
   let body: { resume_version_id?: string };
   try {

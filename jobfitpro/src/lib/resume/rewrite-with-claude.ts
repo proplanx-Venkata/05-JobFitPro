@@ -1,7 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedResume } from "@/types/resume";
-
-const client = new Anthropic();
+import { anthropic, withRetry } from "@/lib/ai/claude-client";
 
 const SYSTEM_PROMPT = `\
 You are an expert resume rewriter. Rewrite the candidate's resume to better align with \
@@ -69,25 +67,27 @@ export async function rewriteResumeWithClaude(
   jdCleanedText: string,
   approvedAnswers: Record<string, string>
 ): Promise<{ data: ParsedResume; inputTokens: number; outputTokens: number }> {
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: USER_PROMPT_TEMPLATE.replace(
-          "{{RESUME_JSON}}",
-          JSON.stringify(masterResume, null, 2)
-        )
-          .replace("{{JD_TEXT}}", jdCleanedText)
-          .replace(
-            "{{ANSWERS_JSON}}",
-            JSON.stringify(approvedAnswers, null, 2)
-          ),
-      },
-    ],
-  });
+  const message = await withRetry(() =>
+    anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: USER_PROMPT_TEMPLATE.replace(
+            "{{RESUME_JSON}}",
+            JSON.stringify(masterResume, null, 2)
+          )
+            .replace("{{JD_TEXT}}", jdCleanedText)
+            .replace(
+              "{{ANSWERS_JSON}}",
+              JSON.stringify(approvedAnswers, null, 2)
+            ),
+        },
+      ],
+    })
+  );
 
   const block = message.content[0];
   if (block.type !== "text") {

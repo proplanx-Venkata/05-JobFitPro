@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { extractText } from "@/lib/resume/extract-text";
 import {
   validateMimeType,
@@ -36,6 +37,9 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
   }
+
+  const rateLimitError = await checkRateLimit(user.id, "upload");
+  if (rateLimitError) return rateLimitError;
 
   // ── 1. Check resume capacity (max 3 non-archived) ───────────────────────
   const { count: resumeCount } = await supabase

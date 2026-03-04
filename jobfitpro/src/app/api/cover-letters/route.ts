@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { generateCoverLetterWithClaude } from "@/lib/cover-letter/generate-with-claude";
 import { generateCoverLetterPdf } from "@/lib/cover-letter/generate-pdf";
 import { logAiUsage } from "@/lib/ai/log-usage";
@@ -37,6 +38,9 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
   }
+
+  const rateLimitError = await checkRateLimit(user.id, "coverLetter");
+  if (rateLimitError) return rateLimitError;
 
   // ── 1. Parse body ────────────────────────────────────────────────────────
   let body: { resume_version_id?: string; recruiter_name?: string };

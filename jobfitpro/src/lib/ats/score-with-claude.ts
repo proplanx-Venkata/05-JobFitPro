@@ -1,8 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedResume } from "@/types/resume";
 import type { AtsClaudeOutput } from "@/types/ats";
-
-const client = new Anthropic();
+import { anthropic, withRetry } from "@/lib/ai/claude-client";
 
 const SYSTEM_PROMPT = `\
 You are a precise ATS (Applicant Tracking System) compatibility evaluator. \
@@ -74,20 +72,22 @@ export async function scoreResumeWithClaude(
   resume: ParsedResume,
   jdCleanedText: string
 ): Promise<{ data: AtsClaudeOutput; inputTokens: number; outputTokens: number }> {
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: USER_PROMPT_TEMPLATE.replace(
-          "{{RESUME_JSON}}",
-          JSON.stringify(resume, null, 2)
-        ).replace("{{JD_TEXT}}", jdCleanedText),
-      },
-    ],
-  });
+  const message = await withRetry(() =>
+    anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: USER_PROMPT_TEMPLATE.replace(
+            "{{RESUME_JSON}}",
+            JSON.stringify(resume, null, 2)
+          ).replace("{{JD_TEXT}}", jdCleanedText),
+        },
+      ],
+    })
+  );
 
   const block = message.content[0];
   if (block.type !== "text") {

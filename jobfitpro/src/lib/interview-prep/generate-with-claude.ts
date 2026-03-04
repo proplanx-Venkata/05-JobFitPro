@@ -1,8 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedResume } from "@/types/resume";
 import type { GapAnalysisResult } from "@/types/gap";
-
-const client = new Anthropic();
+import { anthropic, withRetry } from "@/lib/ai/claude-client";
 
 export interface PrepQuestion {
   question: string;
@@ -28,11 +26,12 @@ export async function generateInterviewPrepWithClaude(
   jdCleanedText: string,
   gaps: GapAnalysisResult
 ): Promise<{ data: InterviewPrepResult; inputTokens: number; outputTokens: number }> {
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    messages: [
+  const message = await withRetry(() =>
+    anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 2048,
+      system: SYSTEM_PROMPT,
+      messages: [
       {
         role: "user",
         content: `Generate 10 interview questions for the following candidate and role.
@@ -53,9 +52,10 @@ ${JSON.stringify(gaps, null, 2)}
 ---
 
 Return JSON: { "questions": [{ "question": "...", "tip": "...", "category": "behavioral"|"technical"|"situational" }] }`,
-      },
-    ],
-  });
+        },
+      ],
+    })
+  );
 
   const block = message.content[0];
   if (block.type !== "text") {

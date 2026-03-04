@@ -1,7 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedResume } from "@/types/resume";
-
-const client = new Anthropic(); // reads ANTHROPIC_API_KEY from env automatically
+import { anthropic, withRetry } from "@/lib/ai/claude-client";
 
 const SYSTEM_PROMPT = `\
 You are a precise resume parser. Extract structured information from resume text \
@@ -83,17 +81,19 @@ RESUME TEXT:
 export async function parseResumeWithClaude(
   resumeText: string
 ): Promise<{ data: ParsedResume; inputTokens: number; outputTokens: number }> {
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: USER_PROMPT_TEMPLATE.replace("{{TEXT}}", resumeText),
-      },
-    ],
-  });
+  const message = await withRetry(() =>
+    anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: USER_PROMPT_TEMPLATE.replace("{{TEXT}}", resumeText),
+        },
+      ],
+    })
+  );
 
   const block = message.content[0];
   if (block.type !== "text") {

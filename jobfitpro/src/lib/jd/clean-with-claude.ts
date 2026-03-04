@@ -1,6 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic(); // reads ANTHROPIC_API_KEY from env
+import { anthropic, withRetry } from "@/lib/ai/claude-client";
 
 const SYSTEM_PROMPT = `\
 You are a job description pre-processor. Clean raw job description text and return \
@@ -50,17 +48,19 @@ export interface CleanedJd {
 export async function cleanJdWithClaude(
   rawText: string
 ): Promise<{ data: CleanedJd; inputTokens: number; outputTokens: number }> {
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: USER_PROMPT_TEMPLATE.replace("{{TEXT}}", rawText),
-      },
-    ],
-  });
+  const message = await withRetry(() =>
+    anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: USER_PROMPT_TEMPLATE.replace("{{TEXT}}", rawText),
+        },
+      ],
+    })
+  );
 
   const block = message.content[0];
   if (block.type !== "text") {

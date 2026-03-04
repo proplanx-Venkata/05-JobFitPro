@@ -1,8 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { Gap } from "@/types/gap";
 import type { TranscriptMessage, InterviewTurn } from "@/types/interview";
-
-const client = new Anthropic();
+import { anthropic, withRetry } from "@/lib/ai/claude-client";
 
 const MAX_QUESTIONS = 20;
 
@@ -88,12 +86,14 @@ ${transcriptText}
 
 INSTRUCTION: ${instruction}`.trim();
 
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userContent }],
-  });
+  const message = await withRetry(() =>
+    anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userContent }],
+    })
+  );
 
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected non-text response from Claude");

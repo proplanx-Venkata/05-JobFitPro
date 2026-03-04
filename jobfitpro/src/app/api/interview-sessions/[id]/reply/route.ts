@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { conductInterviewTurn } from "@/lib/interview/conduct-with-claude";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { logAiUsage } from "@/lib/ai/log-usage";
 import type { ApiResponse } from "@/types/api";
 import type { Database } from "@/types/database";
@@ -39,6 +40,9 @@ export async function POST(
       { status: 401 }
     );
   }
+
+  const rateLimitError = await checkRateLimit(user.id, "interviewTurn");
+  if (rateLimitError) return rateLimitError;
 
   // ── 1. Parse body ────────────────────────────────────────────────────────
   let body: { message?: string };

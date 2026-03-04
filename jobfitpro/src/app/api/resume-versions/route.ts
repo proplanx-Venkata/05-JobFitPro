@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { analyzeGapsWithClaude } from "@/lib/gap/analyze-with-claude";
 import { scoreResumeWithClaude } from "@/lib/ats/score-with-claude";
 import { computeAtsScore } from "@/types/ats";
@@ -44,6 +45,9 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
   }
+
+  const rateLimitError = await checkRateLimit(user.id, "rewrite");
+  if (rateLimitError) return rateLimitError;
 
   // ── 1. Parse body ────────────────────────────────────────────────────────
   let body: { resume_id?: string; job_description_id?: string };

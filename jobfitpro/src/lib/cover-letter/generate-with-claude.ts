@@ -1,8 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedResume } from "@/types/resume";
 import type { CoverLetterContent } from "@/types/cover-letter";
-
-const client = new Anthropic();
+import { anthropic, withRetry } from "@/lib/ai/claude-client";
 
 const SYSTEM_PROMPT = `\
 You are a professional cover letter writer. Generate a concise, compelling cover letter \
@@ -68,25 +66,27 @@ export async function generateCoverLetterWithClaude(
   approvedAnswers: Record<string, string>,
   recruiterName: string | null
 ): Promise<{ data: CoverLetterContent; inputTokens: number; outputTokens: number }> {
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: USER_PROMPT_TEMPLATE.replace(
-          "{{RESUME_JSON}}",
-          JSON.stringify(resume, null, 2)
-        )
-          .replace("{{COMPANY}}", jdCompany ?? "the company")
-          .replace("{{TITLE}}", jdTitle ?? "the position")
-          .replace("{{JD_TEXT}}", jdCleanedText)
-          .replace("{{ANSWERS_JSON}}", JSON.stringify(approvedAnswers, null, 2))
-          .replace("{{RECRUITER}}", recruiterName ?? ""),
-      },
-    ],
-  });
+  const message = await withRetry(() =>
+    anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: USER_PROMPT_TEMPLATE.replace(
+            "{{RESUME_JSON}}",
+            JSON.stringify(resume, null, 2)
+          )
+            .replace("{{COMPANY}}", jdCompany ?? "the company")
+            .replace("{{TITLE}}", jdTitle ?? "the position")
+            .replace("{{JD_TEXT}}", jdCleanedText)
+            .replace("{{ANSWERS_JSON}}", JSON.stringify(approvedAnswers, null, 2))
+            .replace("{{RECRUITER}}", recruiterName ?? ""),
+        },
+      ],
+    })
+  );
 
   const block = message.content[0];
   if (block.type !== "text") {
