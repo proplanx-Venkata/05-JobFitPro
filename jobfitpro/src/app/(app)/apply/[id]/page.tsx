@@ -60,12 +60,14 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
     .eq("id", version.job_description_id)
     .single();
 
-  // Load cover letter (if any)
+  // Load cover letter (if any) — use newest to avoid .single() error on regenerations
   const { data: coverLetter } = await supabase
     .from("cover_letters")
     .select("id, status, output_storage_path")
     .eq("resume_version_id", id)
-    .single();
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   // Load post-rewrite ATS score (latest non-pre-rewrite) and pre-rewrite score in parallel
   const [{ data: atsScore }, { data: preAtsScore }] = await Promise.all([

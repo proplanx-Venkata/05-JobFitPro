@@ -125,7 +125,15 @@ export async function POST(request: NextRequest) {
   const approvedAnswers =
     (session?.approved_answers as Record<string, string> | null) ?? {};
 
-  // ── 6. Insert cover_letter record (status: generating) ───────────────────
+  // ── 6. Delete any previous cover letters for this version (regeneration) ──
+  // Keeps one cover letter per version; prevents .single() breaking the apply page.
+  await supabase
+    .from("cover_letters")
+    .delete()
+    .eq("resume_version_id", resume_version_id)
+    .eq("user_id", user.id);
+
+  // ── 7. Insert cover_letter record (status: generating) ────────────────────
   const { data: clRecord, error: insertErr } = await supabase
     .from("cover_letters")
     .insert({
