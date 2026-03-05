@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 
 export default function ForgotPasswordPage() {
@@ -7,7 +8,9 @@ export default function ForgotPasswordPage() {
       <p className="text-sm text-muted-foreground text-center mb-6">
         Enter your email and we&apos;ll send you a reset link.
       </p>
-      <ForgotPasswordForm />
+      <Suspense>
+        <ForgotPasswordForm />
+      </Suspense>
     </>
   );
 }

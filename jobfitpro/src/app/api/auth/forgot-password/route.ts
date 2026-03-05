@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createSupabaseServerClient();
-    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`;
+    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`;
 
     // Ignore error — always succeed to avoid email enumeration
     await supabase.auth.resetPasswordForEmail(email, { redirectTo });
