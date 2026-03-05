@@ -1,0 +1,12 @@
+{
+  "data": {
+    "id": "jd-test-id-001",
+    "status": "ready",
+    "application_status": "saved",
+    "title": "Senior Software Engineer",
+    "company": "Acme Corp",
+    "source_url": null,
+    "cleaned_text": "We are looking for a Senior Software Engineer...",
+    "created_at": "2025-01-15T10:00:00Z"
+  }
+}

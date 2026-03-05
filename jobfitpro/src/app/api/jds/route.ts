@@ -20,8 +20,8 @@ import type { Database } from "@/types/database";
 type JdRow = Database["public"]["Tables"]["job_descriptions"]["Row"];
 type JdListRow = Omit<JdRow, "raw_text" | "cleaned_text">;
 
-// Allow up to 30 s for fetch + Claude on Vercel
-export const maxDuration = 30;
+// Allow up to 60 s for fetch + Claude on Vercel (Hobby tier max)
+export const maxDuration = 60;
 
 // ---------------------------------------------------------------------------
 // POST /api/jds

@@ -1,0 +1,18 @@
+{
+  "data": {
+    "id": "ats-test-id-001",
+    "overall_score": 78,
+    "category": "Strong",
+    "keyword_match_score": 80,
+    "format_score": 75,
+    "skills_score": 78,
+    "experience_score": 79,
+    "missing_keywords": ["GraphQL", "Kubernetes"],
+    "gap_explanations": {
+      "GraphQL": "Not mentioned in resume but required by job description",
+      "Kubernetes": "Listed as preferred skill"
+    },
+    "passes_threshold": true,
+    "is_pre_rewrite": false
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "data": {
+    "id": "session-test-id-001",
+    "status": "completed",
+    "approved_answers": {
+      "TypeScript": "I have used TypeScript for 3 years in React applications.",
+      "Docker": "I containerized microservices using Docker Compose in my last role."
+    },
+    "conversation_transcript": [
+      {
+        "role": "assistant",
+        "content": "Tell me about your experience with TypeScript. How have you used it in past projects?"
+      },
+      {
+        "role": "user",
+        "content": "I have used TypeScript for 3 years in React applications."
+      },
+      {
+        "role": "assistant",
+        "content": "Great! Tell me about your Docker experience."
+      },
+      {
+        "role": "user",
+        "content": "I containerized microservices using Docker Compose in my last role."
+      },
+      {
+        "role": "assistant",
+        "content": "Thank you! I have everything I need to tailor your resume."
+      }
+    ]
+  }
+}

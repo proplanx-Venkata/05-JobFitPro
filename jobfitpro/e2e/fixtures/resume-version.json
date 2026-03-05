@@ -1,0 +1,21 @@
+{
+  "data": {
+    "resume_version": {
+      "id": "version-test-id-001",
+      "status": "pending",
+      "job_description_id": "jd-test-id-001",
+      "output_storage_path": null,
+      "share_token": null,
+      "share_pin": null
+    },
+    "interview_session": {
+      "id": "session-test-id-001",
+      "status": "pending"
+    },
+    "gap_analysis": [
+      { "keyword": "TypeScript", "reason": "Not mentioned in resume" },
+      { "keyword": "GraphQL", "reason": "Required by job description" },
+      { "keyword": "Docker", "reason": "Listed as preferred skill" }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "data": {
+    "id": "session-test-id-001",
+    "status": "in_progress",
+    "conversation_transcript": [
+      {
+        "role": "assistant",
+        "content": "Tell me about your experience with TypeScript. How have you used it in past projects?"
+      }
+    ]
+  }
+}

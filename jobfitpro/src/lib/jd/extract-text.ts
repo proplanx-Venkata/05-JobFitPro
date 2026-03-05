@@ -1,7 +1,7 @@
 import { promises as dns } from "dns";
 import mammoth from "mammoth";
 import pdfParse from "pdf-parse";
-import Anthropic from "@anthropic-ai/sdk";
+import { anthropic, withRetry } from "@/lib/ai/claude-client";
 
 export interface JdExtractResult {
   text: string;
@@ -17,15 +17,15 @@ const MAX_JD_PREFLIGHT_CHARS = 25_000;
 const MAX_HTML_FETCH_BYTES = 500_000; // 500 KB
 
 /**
- * Cheap pdf-parse preflight — gets real page count and rough char count
- * without calling Claude. Returns null if pdf-parse can't read the file.
+ * Runs pdf-parse on a buffer. Returns page count and text on success, null if
+ * pdf-parse cannot read the file (e.g. scanned/corrupt PDFs).
  */
 async function jdPdfPreflight(
   buffer: Buffer
-): Promise<{ pageCount: number; charCount: number } | null> {
+): Promise<{ pageCount: number; text: string } | null> {
   try {
     const result = await pdfParse(buffer);
-    return { pageCount: result.numpages, charCount: result.text.trim().length };
+    return { pageCount: result.numpages, text: result.text.trim() };
   } catch {
     return null;
   }
@@ -33,10 +33,11 @@ async function jdPdfPreflight(
 
 /**
  * Extracts text from a PDF buffer.
- * Runs a free pdf-parse preflight first; only calls Claude if the file passes.
+ * Uses pdf-parse when it can read the file (the common case for text-based PDFs).
+ * Falls back to Claude only when pdf-parse fails (scanned / complex PDFs).
  */
 async function extractFromPdf(buffer: Buffer): Promise<JdExtractResult> {
-  // ── 1. Cheap preflight (no Claude) ──────────────────────────────────────
+  // ── 1. Try pdf-parse (free, fast) ────────────────────────────────────────
   const preflight = await jdPdfPreflight(buffer);
 
   if (preflight !== null) {
@@ -45,45 +46,50 @@ async function extractFromPdf(buffer: Buffer): Promise<JdExtractResult> {
         `Job description is ${preflight.pageCount} pages — maximum allowed is ${MAX_JD_PAGES}.`
       );
     }
-    if (preflight.charCount > MAX_JD_PREFLIGHT_CHARS) {
+    if (preflight.text.length > MAX_JD_PREFLIGHT_CHARS) {
       throw new Error(
-        `Job description contains too much text (${preflight.charCount.toLocaleString()} characters). ` +
+        `Job description contains too much text (${preflight.text.length.toLocaleString()} characters). ` +
           `Maximum allowed is ${MAX_JD_PREFLIGHT_CHARS.toLocaleString()}.`
       );
     }
+    // pdf-parse succeeded — return its text directly, no Claude call needed
+    return {
+      text: preflight.text,
+      pageCount: preflight.pageCount,
+      sizeBytes: Buffer.byteLength(preflight.text, "utf8"),
+    };
   }
 
-  // ── 2. Claude extraction (only for valid or unreadable files) ────────────
-  const client = new Anthropic();
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 4096, // ample for 5 pages; hard cap on token burn
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "document",
-            source: {
-              type: "base64",
-              media_type: "application/pdf",
-              data: buffer.toString("base64"),
+  // ── 2. Fallback: Claude extraction (scanned / unreadable PDFs only) ──────
+  const message = await withRetry(() =>
+    anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 4096,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "document",
+              source: {
+                type: "base64",
+                media_type: "application/pdf",
+                data: buffer.toString("base64"),
+              },
             },
-          },
-          {
-            type: "text",
-            text: "Extract all text from this PDF. Return ONLY the raw text, no commentary.",
-          },
-        ],
-      },
-    ],
-  });
+            {
+              type: "text",
+              text: "Extract all text from this PDF. Return ONLY the raw text, no commentary.",
+            },
+          ],
+        },
+      ],
+    })
+  );
   const text = (message.content[0] as { type: "text"; text: string }).text;
-  const pageCount =
-    preflight?.pageCount ?? Math.max(1, Math.ceil(text.length / 3_000));
   return {
     text,
-    pageCount,
+    pageCount: Math.max(1, Math.ceil(text.length / 3_000)),
     sizeBytes: Buffer.byteLength(text, "utf8"),
   };
 }

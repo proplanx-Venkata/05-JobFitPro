@@ -1,0 +1,20 @@
+{
+  "data": {
+    "id": "session-test-id-001",
+    "status": "in_progress",
+    "conversation_transcript": [
+      {
+        "role": "assistant",
+        "content": "Tell me about your experience with TypeScript. How have you used it in past projects?"
+      },
+      {
+        "role": "user",
+        "content": "I have used TypeScript for 3 years in React applications."
+      },
+      {
+        "role": "assistant",
+        "content": "Great experience with TypeScript! Can you tell me about any Docker experience you have?"
+      }
+    ]
+  }
+}
