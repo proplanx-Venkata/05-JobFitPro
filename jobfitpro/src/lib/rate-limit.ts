@@ -33,6 +33,8 @@ const limiters = {
   interviewTurn: makeRateLimiter(60, HOUR),
   // Interview prep — 5/hour
   interviewPrep: makeRateLimiter(5, HOUR),
+  // Forgot password — 5/hour per email to prevent spam
+  forgotPassword: makeRateLimiter(5, HOUR),
 } as const;
 
 export type RateLimitKey = keyof typeof limiters;

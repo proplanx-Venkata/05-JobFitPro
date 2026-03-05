@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 import type { ApiResponse } from "@/types/api";
 
 /**
@@ -18,6 +19,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const rateLimitError = await checkRateLimit(email, "forgotPassword");
+    if (rateLimitError) return rateLimitError;
 
     const supabase = await createSupabaseServerClient();
     const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`;
